@@ -1,0 +1,395 @@
+
+/* Genel Ayarlar */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #ffcc00;
+    color: black;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 5px solid #0a0a0a;
+}
+
+header .logo h1 {
+    margin: 0;
+    font-size: 24px;
+    text-transform: uppercase;
+}
+
+header nav a {
+    text-decoration: none;
+    color: black;
+    font-weight: bold;
+    margin-left: 20px;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #333;
+}
+
+/* tab bar */
+
+.tab-content {
+    display: none; /* Başlangıçta tüm tab içeriklerini gizle */
+}
+.tab-content.active {
+    display: block; /* Aktif sekme gösterilecek */
+}
+
+.tab-bar {
+    display: flex;
+    justify-content: center;
+    background-color: #f4f4f4;
+    padding: 20px 0;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-bar button {
+    border: none;
+    background: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #555;
+    transition: all 0.3s ease;
+    margin: 0 10px;
+    border-radius: 8px;
+}
+
+.tab-bar button:hover {
+    background-color: #e2ac0d;
+
+}
+
+.tab-bar button.active {
+    border: 2px solid #e2ac0d;
+    color: #555;
+    background-color: #e2ac0d;
+}
+
+.tab-content {
+    margin-top: 10px;
+}
+
+h2 {
+    font-size: 20px;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* ürün ekleme */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+form input, form textarea {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+}
+
+form button {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+form button:hover {
+    background-color: #45a049;
+}
+
+.form-section {
+    margin-bottom: 20px;
+    margin-right: 10%;
+}
+
+.form-section label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.form-section input,
+.form-section select {
+    display: block;
+    width: calc(100% - 60px);
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.option-container {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+#optionsContainer{
+    overflow: visible;
+}
+
+.option-container select,
+.option-container input {
+    margin-right: 10px;
+}
+
+.save-product{
+    background-color: #4caf50;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    margin: 0;
+    position: absolute;
+    left: 50%;
+    
+}
+.save-product:hover{
+    background-color: #215822;
+    opacity: 0.85;
+}
+
+h3{
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.add-option{
+    background-color: dodgerblue;
+    margin-bottom: 8px;
+    margin-left: 30px;
+    margin-right: 30px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 10px;
+    position: absolute;
+
+}
+
+/*menü oluşturma */
+
+.menu-form-section {
+    margin-bottom: 20px;
+    margin-right: 10%;
+}
+
+.menu-form-section label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.menu-form-section input, 
+.menu-form-section textarea, 
+.menu-form-section select {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.productsContainer, .menuProductsContainer,.category-container {
+    margin-top: 15px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.add-product[type="button"] {
+    padding: 10px 15px;
+    background-color: dodgerblue;
+    color: white;
+ 
+}
+.save-menu[type="button"]{
+    padding: 10px 15px;
+    background-color: #45a049;
+    margin-bottom: 20px;
+    }
+    
+.save-menu[type="button"]:hover {
+    background-color: #215822;
+}
+
+.add-product[type="button"]:hover {
+    background-color: #0056b3;
+}
+
+.add-product, .save-menu {
+    margin-top: 15px;
+    display: block;
+    width: 300px;
+    margin-left: calc(50% - 150px);
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+
+}
+.tab-content[id="createMenuTab"] h3{
+    text-align: center;
+}
+
+
+.category-container {
+    margin-bottom: 20px; /* Her kategori arasında boşluk */
+}
+
+.category-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Üç sütun */
+    gap: 15px; /* Ürünler arasında boşluk */
+}
+
+.product-item {
+    border: 1px solid #ccc; /* Ürünleri ayıran çerçeve */
+    padding: 10px;
+    text-align: center; /* Ürün içeriğini ortala */
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.product-item input {
+    margin-right: 5px;
+}
+
+.menu-products div {
+    border: 1px solid #ccc; /* Ürünleri ayıran çerçeve */
+    padding: 10px;
+    text-align: center; /* Ürün içeriğini ortala */
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+.menu-products button{
+    margin-left: 10px;
+    background-color: rgb(180, 14, 14);
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+/* ürün güncelleme */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ccc;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal .close {
+    align-self: flex-end;
+    cursor: pointer;
+}
+
+th{
+    background-color: #e2ac0d;
+}
+
+.hidden {
+    display: none;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    box-shadow: #333;
+
+}
+
+.popup-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.popup-content h3 {
+    margin-top: 0;
+}

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODTÜ Maydanoz Döner</title>
+    <link rel="stylesheet" href="/static/styles_menu.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>ODTÜ MAYDANOZ DÖNER</h1>
+        </div>
+        <nav>
+            <a href="/orders">SİPARİŞLER</a>
+            <a href="/menus">MENÜLER</a>
+        </nav>
+    </header>
+</head>
+<body>
+    <div class="tab-bar">
+        <button onclick="showTab('addProductTab')" id="addProductTabButton">Ürün Ekle</button>
+        <button onclick="showTab('createMenuTab')" id="createMenuTabButton">Menü Oluştur</button>
+        <button onclick="showTab('updatePricesTab')" id="updatePricesTabButton">Fiyat Güncelle</button>
+    </div>
+    <div id="addProductTab" class="tab-content">
+        <h2>Ürün Ekle</h2>
+        <!-- Ürün ekleme alanı buraya gelecek -->  
+    <div class="form-section">
+        <label for="productName">Ürün Adı:</label>
+        <input type="text" id="productName" placeholder="Ürün adını girin">
+    </div>
+
+    <div class="form-section">
+        <label for="productCategory">Kategori:</label>
+        <select id="productCategory">
+            <option value="">Var olan kategorilerden seçmek için tıklayın</option>
+        </select>
+        <input type="text" id="newCategory" placeholder="Yeni kategori adı girin">
+    </div>
+    <div class="form-section">
+        <label for="productPrice">Ürün Fiyatı:</label>
+        <input type="number" id="productPrice" placeholder="Ürün fiyatını girin" step="0.01">
+    </div>
+
+    <h3>Opsiyonlar</h3>
+    <div id="optionsContainer">
+        <!-- Opsiyonlar buraya eklenecek -->
+    </div>
+    <button class="add-option" type="button" onclick="addOption()">Opsiyon Ekle</button>
+    <div>
+        <button class="save-product" type="button" onclick="saveProduct()">Kaydet</button>
+    </div>
+    </div>
+
+    <div id="createMenuTab" class="tab-content">
+        <h2>Menü Oluştur</h2> 
+        <!-- Menü oluşturma için alan buraya gelecek -->
+        <div class="menu-form-section">
+            <label for="menuName">Menü Adı:</label>
+            <input type="text" id="menuName" placeholder="Menü adını girin">
+        </div>
+
+        <div class="menu-form-section">
+            <label for="menuCategory">Kategori:</label>
+            <select id="menuCategory">
+                <option value="">Var olan kategorilerden seçmek için tıklayın</option>
+            </select>
+            <input type="text" id="newMenuCategory" placeholder="Yeni kategori adı girin">
+        </div>
+        
+        <div class="menu-form-section">
+            <label for="menuDescription">Açıklama:</label>
+            <textarea id="menuDescription" placeholder="Menü açıklamasını girin"></textarea>
+        </div>
+    
+        <div class="menu-form-section">
+            <label for="menuPrice">Menü Fiyatı:</label>
+            <input type="number" id="menuPrice" placeholder="Menü fiyatını girin" step="0.01">
+        </div>
+    
+        <h3>Ürün Seç</h3>
+        <div id="productsContainer">
+            <!-- Ürün listesi buraya dinamik olarak eklenecek -->
+        </div>
+        <button type="button" class="add-product" onclick="addProductToMenu()">Seçilen Ürünleri Menüye Ekle</button>
+    
+        <h3>Menüye Eklenen Ürünler</h3>
+        <div id="menuProductsContainer" class="menu-products">
+            <!-- Menüye eklenen ürünler buraya eklenecek -->
+        </div>
+    
+        <div>
+            <button class="save-menu" type="button" onclick="saveMenu()">Menüyü Kaydet</button>
+        </div>
+    </div>
+    
+    <div id="updatePricesTab" class="tab-content" >
+        <h2>Fiyat Güncelle</h2>
+        <!-- Fiyat güncelleme için alan buraya gelecek -->   
+            <!-- Dropdown Seçenekleri -->
+            <label for="itemSelect">Seçenek:</label>
+            <select id="itemSelect" onchange="loadData()">
+                <option value="">Seçiniz</option>
+                <option value="products">Ürünler</option>
+                <option value="menus">Menüler</option>
+            </select>
+        
+            <!-- Veri Tablosu -->
+            <div id="dataContainer">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Ad</th>
+                            <th>Fiyat</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- Dinamik veri satırları buraya eklenecek -->
+                    </tbody>
+                </table>
+            </div>
+        
+            <!-- Düzenleme Pop-up -->
+            <div id="editPopup" class="popup hidden">
+                <div class="popup-content">
+                    <h3>Ürün Düzenle</h3>
+                    <div>
+                        <input type="hidden" id="editItemId">
+                        <label for="editName">Ürün Adı:</label>
+                        <input type="text" id="editName">
+                    </div>
+                   <div
+                    <label for="editPrice">Fiyat:</label>
+                    <input type="number" id="editPrice" step="0.25">
+                    </div>
+            
+                    <button type="button" onclick="saveProductChanges()">Kaydet</button>
+                    <button type="button" onclick="closeEditPopup()">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/menu.js"> </script>
+</body>
+</html>

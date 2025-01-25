@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODTÜ Maydanoz Döner</title>
+    <link rel="stylesheet" href="/static/styles_home.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>ODTÜ MAYDANOZ DÖNER</h1>
+        </div>
+        <nav>
+            <a href="/orders">SİPARİŞLER</a>
+            <a href="/menus">MENÜLER</a>
+        </nav>
+    </header>
+    <main>
+        <div class="order-grid">
+            {% for order_id, order in orders.items() %}
+            <div class="order-card">
+                <h2>
+                    <span>{{ order.customer_name }}</span>
+                    <span class="order-id">Sip. No: {{ order_id }}</span>
+                </h2>
+                <p><strong>Telefon Numarası:</strong> {{ order.phone }}</p>
+                <hr>
+                <p><strong>Sipariş Saati:</strong> {{ order.date }}</p>
+                <p><strong>Sipariş Detayları:</strong></p>
+                <ul>
+                    {% for item in order.itemss %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+                <hr>
+                <p><strong>Adres:</strong> {{ order.address }}</p>
+                <p><strong>Toplam Tutar:</strong> {{ order.total }} TL</p>
+                <hr>
+                <div class="buttons">
+                    <button
+                        class="status-button preparing"
+                        onclick="updateOrderStatus({{ order['id'] }}, 'hazırlanıyor')"
+                        {% if order['status'] == 'hazırlanıyor' %}style="background-color: green; color: white;"{% endif %}>
+                        HAZIRLANIYOR
+                    </button>
+                    <button
+                        class="status-button on-the-way"
+                        onclick="updateOrderStatus({{ order['id'] }}, 'yolda')"
+                        {% if order['status'] == 'yolda' %}style="background-color: green; color: white;"{% endif %}>
+                        YOLDA
+                    </button>
+                    <button
+                        class="status-button delivered"
+                        onclick="updateOrderStatus({{ order['id'] }}, 'teslim edildi')"
+                        {% if order['status'] == 'teslim edildi' %}style="background-color: green; color: white;"{% endif %}>
+                        TESLİM EDİLDİ
+                    </button>
+                    <button
+                        class="status-button cancel"
+                        onclick="updateOrderStatus({{ order['id'] }}, 'iptal edildi')"
+                        {% if order['status'] == 'iptal edildi' %}style="background-color: red; color: white;"{% endif %}>
+                        İPTAL ET
+                    </button>
+                </div>
+                <p class="status-text"><strong>Sipariş Durumu:</strong> {{ order.status }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+    <script>
+        function updateOrderStatus(orderId, newStatus) {
+            fetch('/update-order-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ order_id: orderId, status: newStatus }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+
+                    location.reload(); // Sayfayı yenileyerek yeni durumları göstermek için
+                } else {
+                    alert('Güncelleme sırasında bir hata oluştu.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        </script>
+</body>
+</html>
+
+
