@@ -16,6 +16,10 @@ Session = sessionmaker(bind=engine)
 def test():
     return jsonify({"status": "working"})
 
+@app.route("/static-test")
+def static_test():
+    return url_for("static", filename="home.js")
+
 @app.route('/')
 def index():
     # SQL sorgusunu text() ile sarıyoruz
