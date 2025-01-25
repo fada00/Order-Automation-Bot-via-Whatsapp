@@ -12,6 +12,10 @@ metadata = MetaData()
 app = Flask(__name__)
 Session = sessionmaker(bind=engine)
 
+@app.route("/test")
+def test():
+    return jsonify({"status": "working"})
+
 @app.route('/')
 def index():
     # SQL sorgusunu text() ile sarıyoruz
