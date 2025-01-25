@@ -3,12 +3,6 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from flask import Flask, render_template, jsonify, request
 from sqlalchemy import create_engine, MetaData, Table, select, join,text
 from sqlalchemy.orm import sessionmaker
-import sys
-import os
-# Proje kök dizinini sys.path'e ekliyoruz
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api_tests import api
-
 app = Flask(__name__)
 
 # Veri tabanı bağlantısı
