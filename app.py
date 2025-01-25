@@ -284,7 +284,7 @@ def update_item(item_type):
         session.commit()
         return jsonify({"success": True})
     
-    except:
+    except Exception as e:
          session.rollback()
          print("Hata:", e)
          return jsonify({"success": False, "message": "Ürün güncellenemedi."}), 500
