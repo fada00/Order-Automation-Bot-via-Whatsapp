@@ -1,5 +1,4 @@
-sqlalchemy
-flask
+SQLAlchemy
 requests
 psycopg2
 click==7.1.2
