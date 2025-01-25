@@ -12,7 +12,7 @@ metadata = MetaData()
 app = Flask(__name__)
 Session = sessionmaker(bind=engine)
 
-@app.route('/orders')
+@app.route('/')
 def index():
     # SQL sorgusunu text() ile sarıyoruz
     #WHERE 
