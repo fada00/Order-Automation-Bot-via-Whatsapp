@@ -325,69 +325,7 @@ def update_product():
     finally:
         session.close()
 
-@app.route('/webhook', methods=['GET','POST'])
-def webhook():
-    if request.method == 'GET':
-        # Webhook doğrulama
-        hub_mode = request.args.get('hub.mode')
-        hub_challenge = request.args.get('hub.challenge')
-        hub_verify_token = request.args.get('hub.verify_token')
-        if hub_mode == 'subscribe' and hub_verify_token == api.VERIFY_TOKEN:
-            return hub_challenge, 200
-        else:
-            return "Error verifying token", 403
-
-    if request.method == 'POST':
-        incoming_data = request.get_json()
-        # print(json.dumps(incoming_data, indent=2))  # Debug
-
-        try:
-            entry = incoming_data['entry'][0]
-            changes = entry['changes'][0]
-            value = changes['value']
-
-            if 'messages' in value:
-                message = value['messages'][0]
-                from_phone_number = message['from']
-                customer_id = api.find_or_create_customer(from_phone_number)
-                order_id = api.create_or_get_active_order(customer_id)
-                state = api.get_user_state(from_phone_number)
-
-                if not state:
-                    # Yeni state
-                    api.set_user_state(from_phone_number, order_id, "INIT")
-
-                # Interaktif list ya da buton cevabı mı?
-                if 'interactive' in message:
-                    interactive_type = message['interactive'].get('type')
-                    if interactive_type == 'list_reply':
-                        selected_id = message['interactive']['list_reply']['id']
-                        api.handle_list_reply(from_phone_number, selected_id)
-                    elif interactive_type == 'button_reply':
-                        selected_id = message['interactive']['button_reply']['id']
-                        api.handle_button_reply(from_phone_number, selected_id)
-                    else:
-                        api.send_whatsapp_text(from_phone_number, "Bu interaktif tür desteklenmiyor.")
-                else:
-                    # Kullanıcı metin yazmışsa. (Proje gereği butonlarla ilerlemek isteniyor ama
-                    # gene de metin gelirse ne yapacağımızı kısaca yönetebiliriz.)
-                    text_body = message.get('text', {}).get('body', '').strip().lower()
-                    if text_body in ["menu", "menü", "başla", "1"]:
-                        api.send_menu_and_products(from_phone_number)
-                    elif text_body in ["tamam", "bitir", "bitti", "2"]:
-                        api.finalize_order(from_phone_number)
-                    else:
-                        # Basit yönlendirme
-                        api.send_whatsapp_text(
-                            from_phone_number,
-                            "Lütfen menü veya ürün seçmek için 'menu' yazın ya da butonları kullanın.\n" 
-                            "Siparişi tamamlamak için 'tamam' yazabilirsiniz."
-                        )
-
-        except Exception as e:
-            print("Hata:", e)
-
-        return jsonify({"status": "ok"}), 200
+api.webhook()
 
 if __name__ == '__main__':
     app.run(debug=True,port=8000)
