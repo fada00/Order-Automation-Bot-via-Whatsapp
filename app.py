@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 # Veri tabanı bağlantısı
 engine = create_engine("postgresql://doadmin:AVNS_5cVVGMm4MB4bAZjijsd@db-postgresql-fra1-87481-do-user-18505233-0.h.db.ondigitalocean.com:25060/defaultdb?sslmode=require")  # PostgreSQL bilgilerinizi ekleyin
 metadata = MetaData()
-
+import api
 # Flask uygulaması
 app = Flask(__name__)
 Session = sessionmaker(bind=engine)
