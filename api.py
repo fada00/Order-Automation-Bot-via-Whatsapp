@@ -516,9 +516,8 @@ def ask_more_options(phone_number):
 # --------------------------------------------------------------------
 # 5) Flask Webhook (Ana Giriş Noktası)
 # --------------------------------------------------------------------
-@app.route('/webhook', methods=['GET','POST'])
-def webhook():
-    if request.method == 'GET':
+def webhook(http_method):
+    if http_method == 'GET':
         # Webhook doğrulama
         hub_mode = request.args.get('hub.mode')
         hub_challenge = request.args.get('hub.challenge')
@@ -528,7 +527,7 @@ def webhook():
         else:
             return "Error verifying token", 403
 
-    if request.method == 'POST':
+    if http_method == 'POST':
         incoming_data = request.get_json()
         # print(json.dumps(incoming_data, indent=2))  # Debug
 

@@ -325,7 +325,9 @@ def update_product():
     finally:
         session.close()
 
-api.webhook()
+@app.route('/webhook', methods=['GET','POST'])
+def webhook_app():
+    return api.webhook(request.method)
 
 if __name__ == '__main__':
     app.run(debug=True,port=8000)
