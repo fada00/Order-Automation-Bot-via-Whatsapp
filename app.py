@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, MetaData, Table, select, join,text
 from sqlalchemy.orm import sessionmaker
 import api
 # Veri tabanı bağlantısı
-engine = create_engine("postgresql://doadmin:AVNS_5cVVGMm4MB4bAZjijsd@db-postgresql-fra1-87481-do-user-18505233-0.h.db.ondigitalocean.com:25060/dbpool?sslmode=require")  # PostgreSQL bilgilerinizi ekleyin
+engine = create_engine("postgresql://doadmin:AVNS_5cVVGMm4MB4bAZjijsd@db-postgresql-fra1-87481-do-user-18505233-0.h.db.ondigitalocean.com:25061/dbpool?sslmode=require")  # PostgreSQL bilgilerinizi ekleyin
 metadata = MetaData()
 
 # Flask uygulaması

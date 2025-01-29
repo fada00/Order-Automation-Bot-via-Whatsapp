@@ -19,7 +19,7 @@ DB_HOST = "db-postgresql-fra1-87481-do-user-18505233-0.h.db.ondigitalocean.com"
 DB_NAME = "dbpool"
 DB_USER = "doadmin"
 DB_PASS = "AVNS_5cVVGMm4MB4bAZjijsd"
-DB_PORT = 25060
+DB_PORT = 25061
 
 
 def get_db_connection():
