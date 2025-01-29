@@ -11,7 +11,7 @@ from datetime import datetime
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOxklQYNzaSy1ZBbdy37duqtA5chL633WQ9NlSlPnNSJ4FrpdVP1F82ZAyHZAvvrDk8B6kzoRbxoT7R8hSJoAnPLkg0ZCbUnZB2683mJsmXLKJWJzlcrkFwSZC3seiW28We0NdxOHSBCPpAIhoxZAEKDoHNnE47jViP1gR8xZAyJWx6LOs6WbjgCr3dZBLQl4N1I2FK2EvTw0d7HEfoj4bUC6kOJg3nPVApZCZB0"  # kısaltılmıştır
+ACCESS_TOKEN = "EAAYjJkjWxhcBOwyFGeCimMMWxBEAAZB6ymukoIMvRvGWkskDRIhTARyK5Muqd4pGTqBPqIYbNyelK3eU4RFMMBneDwgeWlZCiNRpdDjqqk1PK9zexQpsKbW4VRKaBZB4AJpT4juGTZBSFHBbf8kaKPonBDP5WhFQjQbNQkYZCgZAQDB8LZCqBat59ytijDQyDQl2jlV4JzBdhHgM7YBdzfZBRWiXLVGUiafmL7hCq3x33KUZD"  # kısaltılmıştır
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
