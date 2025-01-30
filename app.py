@@ -184,11 +184,20 @@ def save_product():
                 new_option_id = new_option_result.fetchone()[0]
                 option_ids.append(new_option_id)
                     
-        update_product_query = text("""
+        if option_ids!=[]:          
+            update_product_query = text("""
             UPDATE products
             SET option_ids = ARRAY[:option_ids]::integer[]
             WHERE id = :product_id
             """)
+        else:
+            update_product_query = text("""
+            UPDATE products
+            SET option_ids = NULL
+            WHERE id = :product_id
+            """)
+        session.execute(update_product_query, {"option_ids": option_ids, "product_id": product_id})
+
         session.execute(update_product_query, {"option_ids": option_ids, "product_id": product_id})
 
         session.commit()
