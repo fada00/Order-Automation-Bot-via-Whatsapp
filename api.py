@@ -1,15 +1,16 @@
 import json
 import requests
-from flask import request, jsonify
+from flask import Flask, request, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+app = Flask(__name__)
 # --------------------------------------------------------------------
 # WhatsApp Cloud API Ayarları
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBO6dQbSFU0YMzwqAH3OEbsQCTZBmGLZBsaZCsIIVzuc5zQPPS4MNcBvBMBskdxvQQH76vWIVkJNMwm2EVZBK87U4JodizL5cg8ErtXtUutzzuww2WPpZBoB54RGxsMYEwRKYRB6nKV5yKwumastQfIYsI5aj3RWvcSVfhxVjgWSoxSZCZAzdGbrlDwF06SHjEU7ZCCG90kDnyDrOHJ2n7ZAocvO1EaByoDZA5sZD"  # kısaltılmıştır
+ACCESS_TOKEN = "EAAYjJkjWxhcBOZBOiQipzCPcmc6GpkkSLy16eFJFBjlXsEfB735zwYVE8SkqkK32jh1EZBRgP9iPvXygcVGnh69hN9I4ksQ5wJCJ58q0Nv3VskLPS8B4lHYkFGViimkfK4rS2OglSZC3izpeK5xa7GRTZCOjVeTEyCeZBqH9ORFDjmwjl9kBzcir6sZAuVEG69ToDAXgW818AYMJ63UBzhU5GLGrKbBjKgKLZBhZBiWRYccZD"  # kısaltılmıştır
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -994,7 +995,6 @@ def handle_list_reply(phone_number, selected_id):
                        "Siparişinizi onayladık! Teşekkür ederiz.\n" +
                        "Yeni bir sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
-
 
 # --------------------------------------------------------------------
 # 7) Uygulamayı Çalıştır
