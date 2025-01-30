@@ -11,7 +11,7 @@ from datetime import datetime
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOwyFGeCimMMWxBEAAZB6ymukoIMvRvGWkskDRIhTARyK5Muqd4pGTqBPqIYbNyelK3eU4RFMMBneDwgeWlZCiNRpdDjqqk1PK9zexQpsKbW4VRKaBZB4AJpT4juGTZBSFHBbf8kaKPonBDP5WhFQjQbNQkYZCgZAQDB8LZCqBat59ytijDQyDQl2jlV4JzBdhHgM7YBdzfZBRWiXLVGUiafmL7hCq3x33KUZD"  # kısaltılmıştır
+ACCESS_TOKEN = "EAAYjJkjWxhcBO6dQbSFU0YMzwqAH3OEbsQCTZBmGLZBsaZCsIIVzuc5zQPPS4MNcBvBMBskdxvQQH76vWIVkJNMwm2EVZBK87U4JodizL5cg8ErtXtUutzzuww2WPpZBoB54RGxsMYEwRKYRB6nKV5yKwumastQfIYsI5aj3RWvcSVfhxVjgWSoxSZCZAzdGbrlDwF06SHjEU7ZCCG90kDnyDrOHJ2n7ZAocvO1EaByoDZA5sZD"  # kısaltılmıştır
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -788,11 +788,3 @@ def finalize_order(phone_number):
                        "Siparişinizi onayladık! Teşekkür ederiz.\n" +
                        "Yeni bir sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
-
-
-# --------------------------------------------------------------------
-# 7) Uygulamayı Çalıştır
-# --------------------------------------------------------------------
-if __name__ == '__main__':
-    # Local'de test etmek için:
-    app.run(port=80, debug=True)
