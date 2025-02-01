@@ -1,6 +1,7 @@
 import json
 from decimal import Decimal
 from datetime import datetime, timedelta  # Zaman aşımı için ekledik
+from email.policy import default
 
 import requests
 from flask import Flask, request, jsonify
@@ -354,11 +355,13 @@ def get_user_state(phone_number):
             return None
     return row
 
+def convert_decimal(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError
+
 def set_user_state(phone_number, order_id, step, last_detail_id=None, menu_products_queue=None):
-    def convert_decimal(obj):
-        if isinstance(obj, Decimal):
-            return float(obj)
-        raise TypeError
+
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -598,7 +601,7 @@ def send_order_summary(phone_number):
     coupon_data = None
     try:
         if st.get("menu_products_queue"):
-            coupon_data = json.loads(st["menu_products_queue"])
+            coupon_data = json.loads(st["menu_products_queue"],default=convert_decimal)
     except Exception as e:
         coupon_data = None
 
@@ -691,14 +694,15 @@ def handle_button_reply(phone_number, selected_id):
         else:
             send_whatsapp_text(phone_number, "Geçersiz işlem.")
     elif selected_id == "more_options_no":
-        send_whatsapp_buttons(
-            phone_number,
-            "Opsiyon eklendi. Başka ürün eklemek ister misiniz?",
-            [
-                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
-                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
-            ]
-        )
+        # send_whatsapp_buttons(
+        #     phone_number,
+        #     "Opsiyon eklendi. Başka ürün eklemek ister misiniz?",
+        #     [
+        #         {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+        #         {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+        #     ]
+        # )
+        send_order_summary_with_new_product_option(phone_number)
         set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     elif selected_id == "ask_another_yes":
         ask_menu_or_product(phone_number)
