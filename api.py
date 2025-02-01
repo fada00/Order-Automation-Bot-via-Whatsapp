@@ -683,7 +683,7 @@ def handle_list_reply(phone_number, selected_id):
         if menu:
             try:
                 # Menüdeki ürünler JSON formatında saklanıyor.
-                menu_products = json.loads(menu['products'])
+                menu_products = menu['products'][0]
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
