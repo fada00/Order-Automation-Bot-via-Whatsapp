@@ -162,7 +162,7 @@ def get_product_by_id(product_id):
     return product
 
 
-def add_product_to_order(order_id, product_id, quantity=1):
+def add_product_to_order(order_id, product_id, quantity=1, skip_total_update=False):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT price FROM products WHERE id = %s", (product_id,))
@@ -172,14 +172,18 @@ def add_product_to_order(order_id, product_id, quantity=1):
         conn.close()
         raise ValueError("Ürün bulunamadı!")
     product_price = float(p_row[0])
+    # Eğer skip_total_update True ise, order_detail'e 0 fiyat yazalım.
+    price_to_insert = 0 if skip_total_update else product_price
     cur.execute("""
         INSERT INTO order_details (order_id, product_id, quantity, price)
         VALUES (%s, %s, %s, %s)
         RETURNING id
-    """, (order_id, product_id, quantity, product_price))
+    """, (order_id, product_id, quantity, price_to_insert))
     detail_id = cur.fetchone()[0]
-    total_line_price = product_price * quantity
-    cur.execute("UPDATE orders SET total_price = total_price + %s WHERE id = %s", (total_line_price, order_id))
+    # Eğer bayrak False ise, order total'ı güncelleyelim.
+    if not skip_total_update:
+        total_line_price = product_price * quantity
+        cur.execute("UPDATE orders SET total_price = total_price + %s WHERE id = %s", (total_line_price, order_id))
     conn.commit()
     cur.close()
     conn.close()
@@ -570,30 +574,6 @@ def finalize_order_internally(phone_number):
     send_whatsapp_text(phone_number, "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
 
-# Final override fonksiyonu: Menü için final fiyat hesaplaması
-def override_order_price_to_menu(order_id, menu_base_price, order_detail_ids):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    query = "SELECT SUM(price) FROM order_details WHERE id IN %s"
-    cur.execute(query, (tuple(order_detail_ids),))
-    base_sum = cur.fetchone()[0] or 0
-    cur.close()
-    conn.close()
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
-    current_total = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    extra_options = current_total - base_sum
-    final_total = menu_base_price + extra_options
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (final_total, order_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-
 # --------------------------------------------------------------------
 # 7) handle_button_reply ve handle_list_reply Fonksiyonları
 # --------------------------------------------------------------------
@@ -735,7 +715,7 @@ def handle_list_reply(phone_number, selected_id):
                     if not is_order_modifiable(order_id):
                         send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
                         return
-                    detail_id = add_product_to_order(order_id, prod_id, 1)
+                    detail_id = add_product_to_order(order_id, prod_id, 1,skip_total_update=True)
                     menu_queue.append({"order_detail_id": detail_id, "product_id": prod_id})
             # Kaydetmek istediğimiz menü bilgilerini state'e ekliyoruz.
             state_data = {"order_details": menu_queue, "menu_base_price": menu.get("price", 0)}
