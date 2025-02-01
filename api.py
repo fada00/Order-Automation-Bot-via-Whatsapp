@@ -518,7 +518,7 @@ def send_options_list(phone_number, order_detail_id, product_options):
         })
     sections[0]["rows"].append({
         "id": f"skip_option_{order_detail_id}",
-        "title": "Opsiyon seçmek istemiyorum",
+        "title": "Opsiyon istemiyorum",
         "description": "Opsiyon eklemeden devam et"
     })
     send_whatsapp_list(
