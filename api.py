@@ -11,7 +11,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOzsGxt4ZApqxfFUdGGfQKNTwfQf4lnBDqYP9zSHyg6NZACWwOVXXmw9UbZBu3CylbcFouZAxTdxGJjtjDZCkWP4e9zLIp9MZAePubCQO1hfp8EeN7ekQm8fxx0jHycgszabLLc5sMduHtZAXGUGsi8ZAh6Tj6kIsEzhQXvbM2fT9EMVN1aXNxeFp7lV10exEoYJdzsEbrHKAvOoeZA4PTGD2uAgb0GGxIfgIZD"
+ACCESS_TOKEN = "EAAYjJkjWxhcBO1g74woJ3keEKxY070qZBO8TTOsmvfxQ7QGBnkpyFvIoc4tHZCO9gZBetLz4aPWfpE8T1ZCsuganCSFbrJOaZBhCKKxc58F13RHTZAAiMC0opZCZBv8zkXfp1ySmprLNtS3ZAU1tqXKw0RZAqcewJg6RZBBtVMjEzasUkpp83YZBLGIqbOs4iCaQ7F1KkTbC7RcaNA5ld15QZByu8ZCFEkAT1uqwRHLfzKV2jbaUwZD"
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -109,7 +109,6 @@ def create_customer(full_name, phone_number, address, reference=None):
     return new_id
 
 def update_customer_info(customer_id, address=None):
-    # Sadece adres güncellenecek; isim veya referans güncellenmeyecek.
     if address is None:
         return
     conn = get_db_connection()
@@ -229,10 +228,28 @@ def get_all_products():
     conn.close()
     return rows
 
-def override_order_price_to_menu(order_id, menu_price):
+def override_order_price_to_menu(order_id, menu_base_price, order_detail_ids):
+    # Toplam sipariş detaylarının base fiyatını hesaplayalım:
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (menu_price, order_id))
+    query = "SELECT SUM(price) FROM order_details WHERE id IN %s"
+    cur.execute(query, (tuple(order_detail_ids),))
+    base_sum = cur.fetchone()[0] or 0
+    cur.close()
+    conn.close()
+    # Şu an siparişin toplamı:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
+    current_total = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    # Eklenen opsiyon fiyatı:
+    extra_options = current_total - base_sum
+    final_total = menu_base_price + extra_options
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (final_total, order_id))
     conn.commit()
     cur.close()
     conn.close()
@@ -262,7 +279,6 @@ def apply_coupon_to_order(order_id, coupon_code):
         cur.close()
         conn.close()
         return None, "Bu kupon kullanım sınırına ulaşmış."
-    # Sipariş toplamını alalım
     cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
     order = cur.fetchone()
     if not order:
@@ -277,7 +293,6 @@ def apply_coupon_to_order(order_id, coupon_code):
         new_total = total - discount
         if new_total < 0:
             new_total = 0
-    # Güncelleme yapalım
     cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (new_total, order_id))
     cur.execute("UPDATE coupons SET current_usage = current_usage + 1 WHERE code = %s", (coupon_code,))
     conn.commit()
@@ -337,7 +352,6 @@ def clear_user_state(phone_number):
 # 4) Müşteri Bilgisi & Adres Akışı
 # --------------------------------------------------------------------
 def ask_update_or_continue(phone_number, customer):
-    # İsim ve referans güncellenemeyecek, sadece adres güncellenebilsin.
     msg = (f"Kayıtlı bilgileriniz:\n"
            f"İsim: {customer['full_name']}\n"
            f"Referans: {customer.get('reference','')}\n"
@@ -486,10 +500,9 @@ def send_options_list(phone_number, order_detail_id, product_options):
         button_text="Opsiyonlar",
         sections=sections
     )
-    # Kullanıcı, opsiyon seçtikten sonra "Bu ürün için başka opsiyon eklemek ister misiniz?" sorusuyla yönlendirilecektir.
 
 # --------------------------------------------------------------------
-# 6) Sipariş Finalizasyonu (Kullanıcı adresi onayladıktan sonra kupon kodu sorulacak)
+# 6) Sipariş Finalizasyonu (Kupon kodu dahil)
 # --------------------------------------------------------------------
 def finalize_order(phone_number):
     st = get_user_state(phone_number)
@@ -511,9 +524,37 @@ def finalize_order_internally(phone_number):
     if not st:
         return
     order_id = st["order_id"]
+    # Eğer menu_products_queue varsa, final fiyatı hesapla.
+    if st.get("menu_products_queue"):
+        menu_info = json.loads(st["menu_products_queue"])
+        override_order_price_to_menu(order_id, menu_info["menu_base_price"], menu_info["order_details"])
     finalize_order_in_db(order_id)
     send_whatsapp_text(phone_number, "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
+
+# Final override fonksiyonu: Menü için final fiyat hesaplaması
+def override_order_price_to_menu(order_id, menu_base_price, order_detail_ids):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    query = "SELECT SUM(price) FROM order_details WHERE id IN %s"
+    cur.execute(query, (tuple(order_detail_ids),))
+    base_sum = cur.fetchone()[0] or 0
+    cur.close()
+    conn.close()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
+    current_total = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    extra_options = current_total - base_sum
+    final_total = menu_base_price + extra_options
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (final_total, order_id))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 # --------------------------------------------------------------------
 # 7) handle_button_reply ve handle_list_reply Fonksiyonları
@@ -529,13 +570,10 @@ def handle_button_reply(phone_number, selected_id):
     elif selected_id == "choose_products":
         send_categories(phone_number)
     elif selected_id == "UPDATE_ADDRESS_YES":
-        # Sadece adres güncellenecek.
         ask_address(phone_number)
     elif selected_id == "UPDATE_ADDRESS_NO":
-        # Güncelleme yapılmayacak, devam edelim.
         ask_menu_or_product(phone_number)
     elif selected_id == "ADDRESS_SAME":
-        # Adres değişikliğinde 'aynı' seçilirse, kupon kodu sorulacak.
         ask_coupon_code(phone_number)
     elif selected_id == "ADDRESS_NEW":
         ask_new_address(phone_number)
@@ -545,7 +583,6 @@ def handle_button_reply(phone_number, selected_id):
             if not is_order_modifiable(order_id):
                 send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
                 return
-            # Ürünün opsiyon listesini tekrar gönderiyoruz.
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute("SELECT product_id FROM order_details WHERE id = %s", (detail_id,))
@@ -573,6 +610,10 @@ def handle_button_reply(phone_number, selected_id):
             ]
         )
         set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+    elif selected_id == "ask_another_yes":
+        ask_menu_or_product(phone_number)
+    elif selected_id == "ask_another_no":
+        finalize_order(phone_number)
     elif selected_id == "ORDER_STATUS_YES":
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -597,10 +638,6 @@ def handle_button_reply(phone_number, selected_id):
         ask_menu_or_product(phone_number)
     elif selected_id == "NEW_ORDER":
         finalize_order_internally(phone_number)
-    elif selected_id == "ask_another_yes":
-        ask_menu_or_product(phone_number)
-    elif selected_id == "ask_another_no":
-        finalize_order(phone_number)
     else:
         send_whatsapp_text(phone_number, "Bilinmeyen buton seçimi.")
 
@@ -647,20 +684,21 @@ def handle_list_reply(phone_number, selected_id):
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
-            last_detail_id = None
+            menu_order_details = []
             for item in menu_products:
                 prod_id = int(item.get("id"))
                 amount = int(item.get("amount", 1))
                 if not is_order_modifiable(order_id):
                     send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
                     return
-                last_detail_id = add_product_to_order(order_id, prod_id, amount)
+                detail_id = add_product_to_order(order_id, prod_id, amount)
+                menu_order_details.append(detail_id)
                 product_options = get_product_options(prod_id)
                 if product_options:
-                    send_options_list(phone_number, last_detail_id, product_options)
-                    set_user_state(phone_number, order_id, "ASK_MORE_OPTIONS_FOR_PRODUCT", last_detail_id=last_detail_id)
-            # Menü seçilince, siparişin toplam fiyatı menü fiyatıyla güncellenir.
-            override_order_price_to_menu(order_id, menu.get("price", 0))
+                    send_options_list(phone_number, detail_id, product_options)
+                    set_user_state(phone_number, order_id, "ASK_MORE_OPTIONS_FOR_PRODUCT",
+                                   last_detail_id=detail_id,
+                                   menu_products_queue={"order_details": menu_order_details, "menu_base_price": menu.get("price", 0)})
             send_whatsapp_buttons(
                 phone_number,
                 "Menü eklendi. Başka ürün eklemek ister misiniz?",
@@ -669,11 +707,11 @@ def handle_list_reply(phone_number, selected_id):
                     {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
                 ]
             )
-            set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+            set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT",
+                           menu_products_queue={"order_details": menu_order_details, "menu_base_price": menu.get("price", 0)})
         else:
             send_whatsapp_text(phone_number, "Menü bulunamadı.")
     elif selected_id.startswith("option_"):
-        # Format: "option_{order_detail_id}_{option_id}"
         parts = selected_id.split('_')
         if len(parts) == 3:
             detail_id = int(parts[1])
@@ -775,7 +813,6 @@ def webhook(http_method):
                             set_user_state(from_phone_number, order_id, "ASK_REFERENCE")
                             ask_reference(from_phone_number)
                         elif current_step == "ASK_REFERENCE":
-                            # İsim ve referans güncellenemeyecek, bu adım atlanır.
                             set_user_state(from_phone_number, state["order_id"], "ASK_ADDRESS")
                             ask_address(from_phone_number)
                         elif current_step == "ASK_ADDRESS":
@@ -793,7 +830,6 @@ def webhook(http_method):
                             c_data = find_customer_by_phone(from_phone_number)
                             if c_data:
                                 update_customer_info(c_data["id"], address=new_addr)
-                                # Adres güncellendikten sonra kupon kodu sorulacak.
                                 ask_coupon_code(from_phone_number)
                             else:
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
