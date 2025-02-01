@@ -585,16 +585,16 @@ def send_order_summary_with_new_product_option(phone_number):
     summary = "Sipariş Özeti:\n"
     subtotal = 0.0
     for idx, item in enumerate(details, start=1):
-        # Eğer order_details tablosunda kayıtlı fiyat 0 ise,
-        # gerçek fiyatı ürün tablosundan alıyoruz.
-        base_price = item.get("price", 0)
-        if base_price == 0:
+        # order_details tablosundan gelen fiyatı float'a çeviriyoruz.
+        base_price = float(item.get("price", 0))
+        # Eğer kayıtlı fiyat 0 ise, ürünün gerçek fiyatını products tablosundan alıyoruz.
+        if base_price == 0.0:
             product = get_product_by_id(item["product_id"])
             if product and product.get("price") is not None:
                 base_price = float(product["price"])
         quantity = item.get("quantity", 1)
 
-        # Seçilmiş opsiyonları alıp, toplamını hesaplıyoruz.
+        # Seçilmiş opsiyonları alıp toplamlarını hesaplıyoruz.
         options = get_options_for_order_detail(item["id"])
         options_text = ""
         options_sum = 0.0
@@ -603,10 +603,10 @@ def send_order_summary_with_new_product_option(phone_number):
                 opt_price = float(opt["price"])
                 options_text += f"   * {opt['name']} (+{opt_price}₺)\n"
                 options_sum += opt_price
+
         line_total = (base_price + options_sum) * quantity
         subtotal += line_total
 
-        # Ürün adını (order_details'den veya products tablosundan) ve fiyat bilgisini yazıyoruz.
         summary += f"{idx}. {item.get('name', 'Ürün')} - {base_price}₺ x {quantity} = {line_total}₺\n"
         if options_text:
             summary += options_text
@@ -625,7 +625,7 @@ def send_order_summary_with_new_product_option(phone_number):
 
 
 # --------------------------------------------------------------------
-# Yeni Fonksiyon: Sipariş Özeti (Onaylama Mesajı ile)
+# Fonksiyon: Sipariş Özeti (Onaylama Mesajı ile)
 # --------------------------------------------------------------------
 def send_order_summary(phone_number):
     st = get_user_state(phone_number)
@@ -633,7 +633,7 @@ def send_order_summary(phone_number):
         return
     order_id = st["order_id"]
 
-    # Kupon bilgilerini state’den (menu_products_queue alanını) almaya çalışıyoruz.
+    # Kupon bilgilerini state’den almaya çalışıyoruz.
     coupon_data = None
     try:
         if st.get("menu_products_queue"):
@@ -645,8 +645,8 @@ def send_order_summary(phone_number):
     summary = "Sipariş Özeti:\n"
     subtotal = 0.0
     for idx, item in enumerate(details, start=1):
-        base_price = item.get("price", 0)
-        if base_price == 0:
+        base_price = float(item.get("price", 0))
+        if base_price == 0.0:
             product = get_product_by_id(item["product_id"])
             if product and product.get("price") is not None:
                 base_price = float(product["price"])
@@ -668,7 +668,7 @@ def send_order_summary(phone_number):
             summary += options_text
     summary += f"\nAra Toplam: {subtotal}₺\n"
 
-    # Orders tablosundan siparişin toplam fiyatını alıyoruz
+    # Orders tablosundan siparişin toplam fiyatını alıyoruz.
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
@@ -677,10 +677,10 @@ def send_order_summary(phone_number):
     conn.close()
     order_total = float(order_total_row[0]) if order_total_row and order_total_row[0] is not None else subtotal
 
-    # İndirim, hesaplanan ara toplam ile order tablosundaki toplam arasındaki fark
+    # İndirim, hesaplanan ara toplam ile orders tablosundaki toplam arasındaki farktır.
     discount = subtotal - order_total
     if discount < 0:
-        discount = 0
+        discount = 0.0
 
     if coupon_data:
         summary += f"Kupon İndirimi: {discount}₺\n"
