@@ -813,7 +813,7 @@ def process_next_menu_product(phone_number):
         # Ekstra seçenek: opsiyon eklemek istemiyorum.
         sections[0]["rows"].append({
             "id": f"skip_option_{next_item['order_detail_id']}",
-            "title": "Opsiyon seçmek istemiyorum",
+            "title": "Opsiyon istemiyorum",
             "description": "Opsiyon eklemeden devam et"
         })
         send_whatsapp_list(
