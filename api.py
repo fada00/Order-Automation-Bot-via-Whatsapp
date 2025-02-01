@@ -83,11 +83,74 @@ def send_whatsapp_buttons(to_phone_number, body_text, buttons):
     print("send_whatsapp_buttons:", r.status_code, r.json())
 
 # --------------------------------------------------------------------
-# 2) Veritabanı İşlemleri (Müşteri, Sipariş, Ürün, Opsiyon vb.)
-# (create_customer, update_customer_info, create_or_get_active_order, finalize_order_in_db,
-#  add_product_to_order, add_option_to_order_detail, get_product_options, get_all_menus, get_all_products, vb.)
+# 2) Veritabanı İşlemleri (Müşteri, Sipariş, Ürün, Opsiyon, Kupon)
 # --------------------------------------------------------------------
-# Örneğin:
+def find_customer_by_phone(phone_number):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM customers WHERE phone_number = %s", (phone_number,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
+
+def create_customer(full_name, phone_number, address, reference=None):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO customers (full_name, phone_number, address, reference)
+        VALUES (%s, %s, %s, %s)
+        RETURNING id
+    """, (full_name, phone_number, address, reference))
+    new_id = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return new_id
+
+def update_customer_info(customer_id, address=None):
+    # Sadece adres güncellenecek; isim veya referans güncellenmeyecek.
+    if address is None:
+        return
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE customers SET address = %s WHERE id = %s", (address, customer_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def create_or_get_active_order(customer_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id FROM orders
+        WHERE customer_id = %s AND status = 'draft'
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (customer_id,))
+    row = cur.fetchone()
+    if row:
+        order_id = row[0]
+    else:
+        cur.execute("""
+            INSERT INTO orders (customer_id, total_price, status)
+            VALUES (%s, 0, 'draft')
+            RETURNING id
+        """, (customer_id,))
+        order_id = cur.fetchone()[0]
+        conn.commit()
+    cur.close()
+    conn.close()
+    return order_id
+
+def finalize_order_in_db(order_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET status = 'hazırlanıyor' WHERE id = %s", (order_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 def add_product_to_order(order_id, product_id, quantity=1):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -148,7 +211,24 @@ def get_product_options(product_id):
     conn.close()
     return rows
 
-# Menü seçilirse, en sonda siparişin fiyatı menü fiyatıyla override edilsin:
+def get_all_menus():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM menus ORDER BY id")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+def get_all_products():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT id, name, category, price FROM products ORDER BY category, id")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
 def override_order_price_to_menu(order_id, menu_price):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -157,7 +237,6 @@ def override_order_price_to_menu(order_id, menu_price):
     cur.close()
     conn.close()
 
-# Eğer sipariş 'draft' durumundaysa modifiye edilebilsin, aksi halde düzenleme yapılamasın:
 def is_order_modifiable(order_id):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -165,12 +244,46 @@ def is_order_modifiable(order_id):
     row = cur.fetchone()
     cur.close()
     conn.close()
-    # Sadece 'draft' durumundaki sipariş düzenlenebilir.
     if row:
         return row[0] == 'draft'
     return False
 
-# Diğer veritabanı fonksiyonlarınız (create_customer, update_customer_info, create_or_get_active_order, finalize_order_in_db, get_all_menus, get_all_products, vb.) mevcut kabul ediliyor.
+# --- Kupon işlemleri ---
+def apply_coupon_to_order(order_id, coupon_code):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM coupons WHERE code = %s", (coupon_code,))
+    coupon = cur.fetchone()
+    if not coupon:
+        cur.close()
+        conn.close()
+        return None, "Kupon kodu geçersiz."
+    if coupon["current_usage"] >= coupon["max_usage_limit"]:
+        cur.close()
+        conn.close()
+        return None, "Bu kupon kullanım sınırına ulaşmış."
+    # Sipariş toplamını alalım
+    cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    if not order:
+        cur.close()
+        conn.close()
+        return None, "Sipariş bulunamadı."
+    total = order["total_price"]
+    discount = coupon["discount"]
+    if 0 < discount < 1:
+        new_total = total * (1 - discount)
+    else:
+        new_total = total - discount
+        if new_total < 0:
+            new_total = 0
+    # Güncelleme yapalım
+    cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (new_total, order_id))
+    cur.execute("UPDATE coupons SET current_usage = current_usage + 1 WHERE code = %s", (coupon_code,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return new_total, f"Kupon uygulandı. Yeni toplam fiyat: {new_total}₺"
 
 # --------------------------------------------------------------------
 # 3) user_states Yönetimi
@@ -222,18 +335,20 @@ def clear_user_state(phone_number):
 
 # --------------------------------------------------------------------
 # 4) Müşteri Bilgisi & Adres Akışı
-# (ask_update_or_continue, ask_name, ask_reference, ask_address, ask_address_confirmation, ask_new_address)
 # --------------------------------------------------------------------
 def ask_update_or_continue(phone_number, customer):
-    full_name = customer["full_name"]
-    ref = customer.get("reference", "") or ""
-    msg = f"Kayıtlı bilgileriniz:\nİsim: {full_name}\nReferans: {ref}\n\nGüncellemek ister misiniz?"
+    # İsim ve referans güncellenemeyecek, sadece adres güncellenebilsin.
+    msg = (f"Kayıtlı bilgileriniz:\n"
+           f"İsim: {customer['full_name']}\n"
+           f"Referans: {customer.get('reference','')}\n"
+           f"Adres: {customer.get('address','')}\n\n"
+           "Adresinizi güncellemek ister misiniz?")
     send_whatsapp_buttons(
         phone_number,
         msg,
         [
-            {"type": "reply", "reply": {"id": "UPDATE_INFO_YES", "title": "Evet"}},
-            {"type": "reply", "reply": {"id": "UPDATE_INFO_NO", "title": "Hayır"}}
+            {"type": "reply", "reply": {"id": "UPDATE_ADDRESS_YES", "title": "Evet"}},
+            {"type": "reply", "reply": {"id": "UPDATE_ADDRESS_NO", "title": "Hayır"}}
         ]
     )
     st = get_user_state(phone_number)
@@ -245,12 +360,12 @@ def ask_name(phone_number):
     set_user_state(phone_number, st["order_id"], "ASK_NAME")
 
 def ask_reference(phone_number):
-    send_whatsapp_text(phone_number, "Varsa bir referans kodu girin. Yoksa 'yok' yazabilirsiniz.")
+    send_whatsapp_text(phone_number, "Varsa referans kodunuzu girin. Yoksa 'yok' yazabilirsiniz.")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_REFERENCE")
 
 def ask_address(phone_number):
-    send_whatsapp_text(phone_number, "Lütfen adresinizi yazın:")
+    send_whatsapp_text(phone_number, "Lütfen adresinizi giriniz:")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_ADDRESS")
 
@@ -272,6 +387,11 @@ def ask_new_address(phone_number):
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_NEW_ADDRESS")
 
+def ask_coupon_code(phone_number):
+    send_whatsapp_text(phone_number, "Sipariş onayından önce, lütfen kupon kodunuzu girin (yoksa 'yok' yazın):")
+    st = get_user_state(phone_number)
+    set_user_state(phone_number, st["order_id"], "ASK_COUPON")
+
 # --------------------------------------------------------------------
 # 5) Menü veya Ürün Seçimi
 # --------------------------------------------------------------------
@@ -288,7 +408,7 @@ def ask_menu_or_product(phone_number):
     set_user_state(phone_number, st["order_id"], "ASK_MENU_OR_PRODUCT")
 
 def send_menus(phone_number):
-    menus = get_all_menus()  # Mevcut menüler
+    menus = get_all_menus()
     if menus:
         sections = [{"title": "Menüler", "rows": []}]
         for m in menus:
@@ -319,8 +439,7 @@ def send_categories(phone_number):
     sections = [{"title": "Kategoriler", "rows": []}]
     for cat in categories:
         cat_val = cat[0]
-        row_id = f"category_{cat_val}"
-        sections[0]["rows"].append({"id": row_id, "title": cat_val, "description": f"{cat_val} kategorisindeki ürünler."})
+        sections[0]["rows"].append({"id": f"category_{cat_val}", "title": cat_val, "description": f"{cat_val} kategorisindeki ürünler."})
     send_whatsapp_list(
         phone_number,
         header_text="Kategori Seçimi",
@@ -341,9 +460,7 @@ def send_products_and_menus_by_category(phone_number, category):
     sections = [{"title": f"{category} Ürünleri", "rows": []}]
     for p in products:
         row_id = f"product_{p['id']}"
-        title = p['name']
-        desc = f"Fiyat: {p['price']}₺"
-        sections[0]["rows"].append({"id": row_id, "title": title, "description": desc})
+        sections[0]["rows"].append({"id": row_id, "title": p['name'], "description": f"Fiyat: {p['price']}₺"})
     send_whatsapp_list(
         phone_number,
         header_text=f"{category} Kategorisi",
@@ -361,9 +478,7 @@ def send_options_list(phone_number, order_detail_id, product_options):
     sections = [{"title": "Opsiyonlar", "rows": []}]
     for opt in product_options:
         row_id = f"option_{order_detail_id}_{opt['id']}"
-        row_title = opt["name"]
-        row_desc = f"+{opt['price']}₺"
-        sections[0]["rows"].append({"id": row_id, "title": row_title, "description": row_desc})
+        sections[0]["rows"].append({"id": row_id, "title": opt["name"], "description": f"+{opt['price']}₺"})
     send_whatsapp_list(
         to_phone_number=phone_number,
         header_text="Opsiyon Seçimi",
@@ -371,16 +486,16 @@ def send_options_list(phone_number, order_detail_id, product_options):
         button_text="Opsiyonlar",
         sections=sections
     )
-    # State 'CONFIGURING_PRODUCT' bekleniyor (opsiyon seçimi için)
+    # Kullanıcı, opsiyon seçtikten sonra "Bu ürün için başka opsiyon eklemek ister misiniz?" sorusuyla yönlendirilecektir.
 
 # --------------------------------------------------------------------
-# 6) Sipariş Finalizasyonu
+# 6) Sipariş Finalizasyonu (Kullanıcı adresi onayladıktan sonra kupon kodu sorulacak)
 # --------------------------------------------------------------------
 def finalize_order(phone_number):
     st = get_user_state(phone_number)
     if not st:
         return
-    customer = find_customer_by_phone(phone_number)  # Mevcut müşteri sorgusu
+    customer = find_customer_by_phone(phone_number)
     if not customer:
         send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı, lütfen tekrar başlayın.")
         clear_user_state(phone_number)
@@ -396,7 +511,7 @@ def finalize_order_internally(phone_number):
     if not st:
         return
     order_id = st["order_id"]
-    finalize_order_in_db(order_id)  # Sipariş onaylama işlemi
+    finalize_order_in_db(order_id)
     send_whatsapp_text(phone_number, "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
 
@@ -413,19 +528,18 @@ def handle_button_reply(phone_number, selected_id):
         send_menus(phone_number)
     elif selected_id == "choose_products":
         send_categories(phone_number)
-    elif selected_id == "UPDATE_INFO_YES":
-        set_user_state(phone_number, order_id, "UPDATING_NAME")
-        send_whatsapp_text(phone_number, "Lütfen yeni isminizi-soyisminizi yazın:")
-    elif selected_id == "UPDATE_INFO_NO":
-        set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
-        send_whatsapp_text(phone_number, "Bilgiler güncellenmeden devam ediliyor.")
+    elif selected_id == "UPDATE_ADDRESS_YES":
+        # Sadece adres güncellenecek.
+        ask_address(phone_number)
+    elif selected_id == "UPDATE_ADDRESS_NO":
+        # Güncelleme yapılmayacak, devam edelim.
         ask_menu_or_product(phone_number)
     elif selected_id == "ADDRESS_SAME":
-        finalize_order_internally(phone_number)
+        # Adres değişikliğinde 'aynı' seçilirse, kupon kodu sorulacak.
+        ask_coupon_code(phone_number)
     elif selected_id == "ADDRESS_NEW":
         ask_new_address(phone_number)
     elif selected_id == "more_options_yes":
-        # Eğer kullanıcı mevcut ürün için ek opsiyon eklemek istiyorsa:
         if st["step"] == "ASK_MORE_OPTIONS_FOR_PRODUCT":
             detail_id = st.get("last_detail_id")
             if not is_order_modifiable(order_id):
@@ -450,7 +564,6 @@ def handle_button_reply(phone_number, selected_id):
         else:
             send_whatsapp_text(phone_number, "Geçersiz işlem.")
     elif selected_id == "more_options_no":
-        # Opsiyon eklemesi tamamlandıktan sonra, kullanıcıya başka ürün ekleyip eklemeyeceği sorulur.
         send_whatsapp_buttons(
             phone_number,
             "Opsiyon eklendi. Başka ürün eklemek ister misiniz?",
@@ -538,13 +651,11 @@ def handle_list_reply(phone_number, selected_id):
                     send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
                     return
                 last_detail_id = add_product_to_order(order_id, prod_id, amount)
-                # Her bir ürün için opsiyon akışı
                 product_options = get_product_options(prod_id)
                 if product_options:
                     send_options_list(phone_number, last_detail_id, product_options)
                     set_user_state(phone_number, order_id, "ASK_MORE_OPTIONS_FOR_PRODUCT", last_detail_id=last_detail_id)
-                # Eğer opsiyon yoksa, otomatik geçebiliriz.
-            # Menü seçilirse, en sonda siparişin toplam fiyatı menü fiyatı olarak ayarlanır.
+            # Menü seçilince, siparişin toplam fiyatı menü fiyatıyla güncellenir.
             override_order_price_to_menu(order_id, menu.get("price", 0))
             send_whatsapp_buttons(
                 phone_number,
@@ -558,7 +669,7 @@ def handle_list_reply(phone_number, selected_id):
         else:
             send_whatsapp_text(phone_number, "Menü bulunamadı.")
     elif selected_id.startswith("option_"):
-        # Seçim formatı: "option_{order_detail_id}_{option_id}"
+        # Format: "option_{order_detail_id}_{option_id}"
         parts = selected_id.split('_')
         if len(parts) == 3:
             detail_id = int(parts[1])
@@ -605,7 +716,7 @@ def webhook(http_method):
                 message = value['messages'][0]
                 from_phone_number = message['from']
 
-                customer_data = find_customer_by_phone(from_phone_number)  # Mevcut müşteri sorgusu
+                customer_data = find_customer_by_phone(from_phone_number)
                 state = get_user_state(from_phone_number)
 
                 if not state:
@@ -629,11 +740,11 @@ def webhook(http_method):
                                 "Aktif siparişiniz mevcut. Durumunu görmek ister misiniz?",
                                 [
                                     {"type": "reply", "reply": {"id": "ORDER_STATUS_YES", "title": "Evet"}},
-                                    {"type": "reply", "reply": {"id": "UPDATE_INFO_NO", "title": "Hayır, devam et"}}
+                                    {"type": "reply", "reply": {"id": "UPDATE_ADDRESS_NO", "title": "Hayır, devam et"}}
                                 ]
                             )
                         else:
-                            order_id = create_or_get_active_order(customer_data["id"])  # Yeni sipariş 'draft' olarak oluşturulmalı.
+                            order_id = create_or_get_active_order(customer_data["id"])
                             set_user_state(from_phone_number, order_id, "UPDATE_OR_CONTINUE")
                             ask_update_or_continue(from_phone_number, customer_data)
                     else:
@@ -660,16 +771,9 @@ def webhook(http_method):
                             set_user_state(from_phone_number, order_id, "ASK_REFERENCE")
                             ask_reference(from_phone_number)
                         elif current_step == "ASK_REFERENCE":
-                            ref_text = text_body
-                            if ref_text.lower() == "yok":
-                                ref_text = ""
-                            c_data = find_customer_by_phone(from_phone_number)
-                            if c_data:
-                                update_customer_info(c_data["id"], reference=ref_text)
-                                set_user_state(from_phone_number, state["order_id"], "ASK_ADDRESS")
-                                ask_address(from_phone_number)
-                            else:
-                                send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
+                            # İsim ve referans güncellenemeyecek, bu adım atlanır.
+                            set_user_state(from_phone_number, state["order_id"], "ASK_ADDRESS")
+                            ask_address(from_phone_number)
                         elif current_step == "ASK_ADDRESS":
                             addr = text_body
                             c_data = find_customer_by_phone(from_phone_number)
@@ -680,35 +784,23 @@ def webhook(http_method):
                                 ask_menu_or_product(from_phone_number)
                             else:
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
-                        elif current_step == "UPDATING_NAME":
-                            new_name = text_body
-                            c_data = find_customer_by_phone(from_phone_number)
-                            if c_data:
-                                update_customer_info(c_data["id"], full_name=new_name)
-                                set_user_state(from_phone_number, state["order_id"], "UPDATING_REFERENCE")
-                                send_whatsapp_text(from_phone_number, "Yeni referans kodu (yoksa 'yok' yazın):")
-                            else:
-                                send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
-                        elif current_step == "UPDATING_REFERENCE":
-                            new_ref = text_body
-                            if new_ref.lower() == "yok":
-                                new_ref = ""
-                            c_data = find_customer_by_phone(from_phone_number)
-                            if c_data:
-                                update_customer_info(c_data["id"], reference=new_ref)
-                                set_user_state(from_phone_number, state["order_id"], "ASK_MENU_OR_PRODUCT")
-                                send_whatsapp_text(from_phone_number, "Bilgiler güncellendi. Lütfen seçim yapın.")
-                                ask_menu_or_product(from_phone_number)
-                            else:
-                                send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
                         elif current_step == "ASK_NEW_ADDRESS":
                             new_addr = text_body
                             c_data = find_customer_by_phone(from_phone_number)
                             if c_data:
                                 update_customer_info(c_data["id"], address=new_addr)
-                                finalize_order_internally(from_phone_number)
+                                # Adres güncellendikten sonra kupon kodu sorulacak.
+                                ask_coupon_code(from_phone_number)
                             else:
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
+                        elif current_step == "ASK_COUPON":
+                            coupon_code = text_body.strip()
+                            if coupon_code.lower() == "yok":
+                                finalize_order_internally(from_phone_number)
+                            else:
+                                new_total, msg_text = apply_coupon_to_order(state["order_id"], coupon_code)
+                                send_whatsapp_text(from_phone_number, msg_text)
+                                finalize_order_internally(from_phone_number)
                         else:
                             if text_body.lower() in ["menu", "menü", "başla", "1"]:
                                 ask_menu_or_product(from_phone_number)
