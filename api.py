@@ -671,6 +671,8 @@ def handle_list_reply(phone_number, selected_id):
             )
             set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     elif selected_id.startswith("menu_"):
+        # --- Menü Seçimi: Menü içeriğini parse edip, her ürün için amount sayısı kadar
+        # ayrı order_detail ekleyip, her birine opsiyon sorma işlemi yapılacak.
         menu_id = int(selected_id[len("menu_"):])
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -680,35 +682,28 @@ def handle_list_reply(phone_number, selected_id):
         conn.close()
         if menu:
             try:
-                menu_products = menu['products'][0]
+                # Menüdeki ürünler JSON formatında saklanıyor.
+                menu_products = json.loads(menu['products'])
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
-            menu_order_details = []
+            # Oluşturacağımız queue: her bir eleman bir sözlük; örn. {"order_detail_id": ..., "product_id": ...}
+            menu_queue = []
             for item in menu_products:
                 prod_id = int(item.get("id"))
                 amount = int(item.get("amount", 1))
-                if not is_order_modifiable(order_id):
-                    send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
-                    return
-                detail_id = add_product_to_order(order_id, prod_id, amount)
-                menu_order_details.append(detail_id)
-                product_options = get_product_options(prod_id)
-                if product_options:
-                    send_options_list(phone_number, detail_id, product_options)
-                    set_user_state(phone_number, order_id, "ASK_MORE_OPTIONS_FOR_PRODUCT",
-                                   last_detail_id=detail_id,
-                                   menu_products_queue={"order_details": menu_order_details, "menu_base_price": menu.get("price", 0)})
-            send_whatsapp_buttons(
-                phone_number,
-                "Menü eklendi. Başka ürün eklemek ister misiniz?",
-                [
-                    {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
-                    {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
-                ]
-            )
-            set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT",
-                           menu_products_queue={"order_details": menu_order_details, "menu_base_price": menu.get("price", 0)})
+                # Her bir ürün için amount kadar ayrı ayrı ekleme yapalım.
+                for i in range(amount):
+                    if not is_order_modifiable(order_id):
+                        send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
+                        return
+                    detail_id = add_product_to_order(order_id, prod_id, 1)
+                    menu_queue.append({"order_detail_id": detail_id, "product_id": prod_id})
+            # Kaydetmek istediğimiz menü bilgilerini state'e ekliyoruz.
+            state_data = {"order_details": menu_queue, "menu_base_price": menu.get("price", 0)}
+            set_user_state(phone_number, order_id, "PROCESSING_MENU_OPTIONS", menu_products_queue=state_data)
+            # Queue'deki ilk ürün için opsiyonları soruyoruz.
+            process_next_menu_product(phone_number)
         else:
             send_whatsapp_text(phone_number, "Menü bulunamadı.")
     elif selected_id.startswith("option_"):
@@ -729,10 +724,81 @@ def handle_list_reply(phone_number, selected_id):
                 ]
             )
             set_user_state(phone_number, order_id, "ASK_MORE_OPTIONS_FOR_PRODUCT", last_detail_id=detail_id)
+    elif selected_id.startswith("skip_option_"):
+        # Kullanıcı opsiyon eklemek istemediğini belirledi.
+        send_whatsapp_buttons(
+            phone_number,
+            "Opsiyon eklenmedi. Başka ürün eklemek ister misiniz?",
+            [
+                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+            ]
+        )
+        set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     else:
         send_whatsapp_text(phone_number,
                            "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
         clear_user_state(phone_number)
+
+# --------------------------------------------------------------------
+# Yeni Yardımcı Fonksiyon: process_next_menu_product
+# --------------------------------------------------------------------
+def process_next_menu_product(phone_number):
+    st = get_user_state(phone_number)
+    if not st or not st.get("menu_products_queue"):
+        # Eğer queue boşsa, opsiyon işlemi tamamlanmış demektir.
+        send_whatsapp_buttons(
+            phone_number,
+            "Menüdeki tüm ürünler için opsiyon sorgulaması tamamlandı. Başka ürün eklemek ister misiniz?",
+            [
+                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+            ]
+        )
+        set_user_state(phone_number, st["order_id"], "ASK_ANOTHER_PRODUCT", menu_products_queue=None)
+        return
+    # Queue, state içinde bir sözlük olarak saklanıyor.
+    queue_dict = st["menu_products_queue"]
+    queue = queue_dict.get("order_details", [])
+    if not queue:
+        send_whatsapp_buttons(
+            phone_number,
+            "Menüdeki tüm ürünler için opsiyon sorgulaması tamamlandı. Başka ürün eklemek ister misiniz?",
+            [
+                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+            ]
+        )
+        set_user_state(phone_number, st["order_id"], "ASK_ANOTHER_PRODUCT", menu_products_queue=None)
+        return
+    next_item = queue.pop(0)  # Listenin ilk elemanını alıyoruz.
+    # Güncellenmiş queue'yu state'e kaydediyoruz.
+    queue_dict["order_details"] = queue
+    set_user_state(phone_number, st["order_id"], "PROCESSING_MENU_OPTIONS", last_detail_id=next_item["order_detail_id"], menu_products_queue=queue_dict)
+    # İlgili ürün için opsiyonları soruyoruz.
+    product_options = get_product_options(next_item["product_id"])
+    if product_options:
+        # Opsiyon listesine ek olarak "Opsiyon seçmek istemiyorum" seçeneği ekleyelim.
+        sections = [{"title": "Opsiyonlar", "rows": []}]
+        for opt in product_options:
+            row_id = f"option_{next_item['order_detail_id']}_{opt['id']}"
+            sections[0]["rows"].append({"id": row_id, "title": opt["name"], "description": f"+{opt['price']}₺"})
+        # Ekstra seçenek: opsiyon eklemek istemiyorum.
+        sections[0]["rows"].append({
+            "id": f"skip_option_{next_item['order_detail_id']}",
+            "title": "Opsiyon seçmek istemiyorum",
+            "description": "Opsiyon eklemeden devam et"
+        })
+        send_whatsapp_list(
+            to_phone_number=phone_number,
+            header_text="Opsiyon Seçimi",
+            body_text="Lütfen bu ürün için bir opsiyon seçin ya da opsiyon eklemeden devam edin.",
+            button_text="Opsiyonlar",
+            sections=sections
+        )
+    else:
+        # Eğer bu ürün için opsiyon yoksa, otomatik olarak sıradaki ürüne geç.
+        process_next_menu_product(phone_number)
 
 # --------------------------------------------------------------------
 # 8) Webhook Fonksiyonu
