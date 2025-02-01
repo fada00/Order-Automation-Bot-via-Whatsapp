@@ -1,4 +1,6 @@
 import json
+from decimal import Decimal
+
 import requests
 from flask import Flask, request, jsonify
 import psycopg2
@@ -313,6 +315,11 @@ def get_user_state(phone_number):
     return row
 
 def set_user_state(phone_number, order_id, step, last_detail_id=None, menu_products_queue=None):
+    def convert_decimal(obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        raise TypeError
+
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT phone_number FROM user_states WHERE phone_number = %s", (phone_number,))
@@ -327,7 +334,7 @@ def set_user_state(phone_number, order_id, step, last_detail_id=None, menu_produ
                 updated_at = NOW()
             WHERE phone_number = %s
         """, (order_id, step, last_detail_id,
-              json.dumps(menu_products_queue) if menu_products_queue else None,
+              json.dumps(menu_products_queue,default=convert_decimal) if menu_products_queue else None,
               phone_number))
     else:
         cur.execute("""
@@ -335,7 +342,7 @@ def set_user_state(phone_number, order_id, step, last_detail_id=None, menu_produ
             (phone_number, order_id, step, last_detail_id, menu_products_queue, created_at, updated_at)
             VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
         """, (phone_number, order_id, step, last_detail_id,
-              json.dumps(menu_products_queue) if menu_products_queue else None))
+              json.dumps(menu_products_queue,default=convert_decimal) if menu_products_queue else None))
     conn.commit()
     cur.close()
     conn.close()
