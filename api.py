@@ -609,16 +609,19 @@ def send_order_summary(phone_number,mode="new_product"):
             summary += options_text
 
     summary += f"\nAra Toplam: {subtotal}₺\n"
-
+    try:
+        d = json.loads(st.get("menu_products_queue",{})).get('discount_amount',0.0)
+    except:
+        d = 0.0
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
     order_total_row = cur.fetchone()
     cur.close()
     conn.close()
-    order_total = float(order_total_row[0]) if order_total_row and order_total_row[0] is not None else subtotal
+    order_total = float(order_total_row[0]) if order_total_row and order_total_row[0] is not None else subtotal - d
 
-    discount = subtotal - order_total
+    discount = (subtotal - order_total) + d
     if discount < 0:
         discount = 0.0
 
@@ -1051,16 +1054,16 @@ def webhook(http_method):
                                 cur.close()
                                 conn.close()
                                 original_total = order["total_price"] if order else 0
-                                coupon_data = {"coupon_code": None, "original_total": original_total, "discount_amount": 0, "new_total": original_total}
-                                set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data))
+                                coupon_data = {"coupon_code": None, "original_total": int(original_total), "discount_amount": 0, "new_total": int(original_total)}
+                                set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data,default=convert_decimal))
                                 send_order_summary(from_phone_number,mode="confirm")
                             else:
                                 original_total, discount_amount, new_total, coupon_obj = calculate_coupon_discount(order_id, coupon_code)
                                 if original_total is None:
                                     send_whatsapp_text(from_phone_number, discount_amount)  # Hata mesajı
                                 else:
-                                    coupon_data = {"coupon_code": coupon_code, "original_total": original_total, "discount_amount": discount_amount, "new_total": new_total}
-                                    set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data))
+                                    coupon_data = {"coupon_code": coupon_code, "original_total": int(original_total), "discount_amount": int(discount_amount), "new_total": int(new_total)}
+                                    set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data,default=convert_decimal))
                                     send_order_summary(from_phone_number,mode="confirm")
                         else:
                             if text_body.lower() in ["menu", "menü", "başla", "1"]:
