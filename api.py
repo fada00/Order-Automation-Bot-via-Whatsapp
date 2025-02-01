@@ -161,6 +161,13 @@ def get_product_by_id(product_id):
     conn.close()
     return product
 
+def update_order_total(current_order_id,total_price):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (total_price, current_order_id))
+    cur.close()
+    conn.close()
+    return True  # Başarıyla güncellendi
 
 def add_product_to_order(order_id, product_id, quantity=1, skip_total_update=False):
     conn = get_db_connection()
@@ -707,6 +714,7 @@ def handle_list_reply(phone_number, selected_id):
                 return
             # Oluşturacağımız queue: her bir eleman bir sözlük; örn. {"order_detail_id": ..., "product_id": ...}
             menu_queue = []
+            update_order_total(order_id, menu.get("price", 0))
             for item in menu_products:
                 prod_id = int(item.get("id"))
                 amount = int(item.get("amount", 1))
