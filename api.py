@@ -558,6 +558,34 @@ def send_options_list(phone_number, order_detail_id, product_options):
         sections=sections
     )
 
+def send_order_summary_with_new_product_option(phone_number):
+    st = get_user_state(phone_number)
+    if not st:
+        return
+    order_id = st["order_id"]
+    details = get_order_details(order_id)
+    summary = "Sipariş Özeti:\n"
+    subtotal = 0
+    for idx, item in enumerate(details, start=1):
+        product_name = item.get("name", "Ürün")
+        price = item.get("price", 0)
+        quantity = item.get("quantity", 1)
+        line_total = price * quantity
+        subtotal += line_total
+        summary += f"{idx}. {product_name} - {price}₺ x {quantity} = {line_total}₺\n"
+    summary += f"\nAra Toplam: {subtotal}₺\n\n"
+    summary += "Yeni bir ürün eklemek ister misiniz?"
+    send_whatsapp_buttons(
+         phone_number,
+         summary,
+         [
+              {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+              {"type": "reply", "reply": {"id": "ask_another_no", "title": "Siparişi Onayla"}}
+         ]
+    )
+    set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+
+
 # --------------------------------------------------------------------
 # Yeni Fonksiyon: Sipariş Özeti Gösterimi
 # --------------------------------------------------------------------
@@ -813,15 +841,18 @@ def handle_list_reply(phone_number, selected_id):
             )
             set_user_state(phone_number, order_id, "ASK_MORE_OPTIONS_FOR_PRODUCT", last_detail_id=detail_id)
     elif selected_id.startswith("skip_option_"):
-        send_whatsapp_buttons(
-            phone_number,
-            "Opsiyon eklenmedi. Başka ürün eklemek ister misiniz?",
-            [
-                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
-                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
-            ]
-        )
-        set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+        # send_whatsapp_buttons(
+        #     phone_number,
+        #     "Opsiyon eklenmedi. Başka ürün eklemek ister misiniz?",
+        #     [
+        #         {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+        #         {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+        #     ]
+        # )
+        # set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+
+        send_order_summary_with_new_product_option(phone_number)
+
     else:
         send_whatsapp_text(phone_number,
                            "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
