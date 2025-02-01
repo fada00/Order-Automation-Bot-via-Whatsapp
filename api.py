@@ -511,11 +511,20 @@ def send_options_list(phone_number, order_detail_id, product_options):
     sections = [{"title": "Opsiyonlar", "rows": []}]
     for opt in product_options:
         row_id = f"option_{order_detail_id}_{opt['id']}"
-        sections[0]["rows"].append({"id": row_id, "title": opt["name"], "description": f"+{opt['price']}₺"})
+        sections[0]["rows"].append({
+            "id": row_id,
+            "title": opt["name"],
+            "description": f"+{opt['price']}₺"
+        })
+    sections[0]["rows"].append({
+        "id": f"skip_option_{order_detail_id}",
+        "title": "Opsiyon seçmek istemiyorum",
+        "description": "Opsiyon eklemeden devam et"
+    })
     send_whatsapp_list(
         to_phone_number=phone_number,
         header_text="Opsiyon Seçimi",
-        body_text="Lütfen bu ürün için bir opsiyon seçin.",
+        body_text="Lütfen bu ürün için bir opsiyon seçin ya da opsiyonu atlamak için seçeneği kullanın.",
         button_text="Opsiyonlar",
         sections=sections
     )
