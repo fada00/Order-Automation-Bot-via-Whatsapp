@@ -576,7 +576,7 @@ def send_options_list(phone_number, order_detail_id, product_options):
     )
 
 
-def send_order_summary_with_new_product_option(phone_number):
+def send_order_summary(phone_number,mode="new_product"):
     st = get_user_state(phone_number)
     if not st:
         return
@@ -584,17 +584,14 @@ def send_order_summary_with_new_product_option(phone_number):
     details = get_order_details(order_id)
     summary = "Sipariş Özeti:\n"
     subtotal = 0.0
+
     for idx, item in enumerate(details, start=1):
-        # order_details tablosundan gelen fiyatı float'a çeviriyoruz.
-        base_price = float(item.get("price", 0))
-        # Eğer kayıtlı fiyat 0 ise, ürünün gerçek fiyatını products tablosundan alıyoruz.
-        if base_price == 0.0:
-            product = get_product_by_id(item["product_id"])
-            if product and product.get("price") is not None:
-                base_price = float(product["price"])
+        # Ürün fiyatını doğrudan products tablosundan çekiyoruz.
+        product = get_product_by_id(item["product_id"])
+        base_price = float(product["price"]) if product and product.get("price") is not None else 0.0
         quantity = item.get("quantity", 1)
 
-        # Seçilmiş opsiyonları alıp toplamlarını hesaplıyoruz.
+        # Seçilmiş opsiyonlar varsa, fiyatlarını ekliyoruz.
         options = get_options_for_order_detail(item["id"])
         options_text = ""
         options_sum = 0.0
@@ -607,68 +604,13 @@ def send_order_summary_with_new_product_option(phone_number):
         line_total = (base_price + options_sum) * quantity
         subtotal += line_total
 
-        summary += f"{idx}. {item.get('name', 'Ürün')} - {base_price}₺ x {quantity} = {line_total}₺\n"
+        summary += f"{idx}. {product['name']} - {base_price}₺ x {quantity} = {line_total}₺\n"
         if options_text:
             summary += options_text
-    summary += f"\nAra Toplam: {subtotal}₺\n\n"
-    summary += "Yeni bir ürün eklemek ister misiniz?"
 
-    send_whatsapp_buttons(
-        phone_number,
-        summary,
-        [
-            {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
-            {"type": "reply", "reply": {"id": "ask_another_no", "title": "Siparişi Onayla"}}
-        ]
-    )
-    set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
-
-
-# --------------------------------------------------------------------
-# Fonksiyon: Sipariş Özeti (Onaylama Mesajı ile)
-# --------------------------------------------------------------------
-def send_order_summary(phone_number):
-    st = get_user_state(phone_number)
-    if not st:
-        return
-    order_id = st["order_id"]
-
-    # Kupon bilgilerini state’den almaya çalışıyoruz.
-    coupon_data = None
-    try:
-        if st.get("menu_products_queue"):
-            coupon_data = json.loads(st["menu_products_queue"], default=convert_decimal)
-    except Exception as e:
-        coupon_data = None
-
-    details = get_order_details(order_id)
-    summary = "Sipariş Özeti:\n"
-    subtotal = 0.0
-    for idx, item in enumerate(details, start=1):
-        base_price = float(item.get("price", 0))
-        if base_price == 0.0:
-            product = get_product_by_id(item["product_id"])
-            if product and product.get("price") is not None:
-                base_price = float(product["price"])
-        quantity = item.get("quantity", 1)
-
-        options = get_options_for_order_detail(item["id"])
-        options_text = ""
-        options_sum = 0.0
-        if options:
-            for opt in options:
-                opt_price = float(opt["price"])
-                options_text += f"   * {opt['name']} (+{opt_price}₺)\n"
-                options_sum += opt_price
-        line_total = (base_price + options_sum) * quantity
-        subtotal += line_total
-
-        summary += f"{idx}. {item.get('name', 'Ürün')} - {base_price}₺ x {quantity} = {line_total}₺\n"
-        if options_text:
-            summary += options_text
     summary += f"\nAra Toplam: {subtotal}₺\n"
 
-    # Orders tablosundan siparişin toplam fiyatını alıyoruz.
+    # orders tablosundan siparişin toplam fiyatını çekiyoruz
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
@@ -677,25 +619,39 @@ def send_order_summary(phone_number):
     conn.close()
     order_total = float(order_total_row[0]) if order_total_row and order_total_row[0] is not None else subtotal
 
-    # İndirim, hesaplanan ara toplam ile orders tablosundaki toplam arasındaki farktır.
     discount = subtotal - order_total
     if discount < 0:
         discount = 0.0
 
-    if coupon_data:
-        summary += f"Kupon İndirimi: {discount}₺\n"
-        summary += f"Ödenecek Tutar: {order_total}₺\n"
-    else:
-        summary += f"Ödenecek Tutar: {subtotal}₺\n"
+    summary += f"İndirim: {discount}₺\n\n"
+    summary += "Yeni bir ürün eklemek ister misiniz?"
 
-    send_whatsapp_buttons(
-        phone_number,
-        summary,
-        [
-            {"type": "reply", "reply": {"id": "CONFIRM_ORDER", "title": "Onayla"}},
-            {"type": "reply", "reply": {"id": "CANCEL_ORDER", "title": "İptal Et"}}
-        ]
-    )
+    if mode == "new_product":
+        summary += "\nYeni bir ürün eklemek ister misiniz?"
+        send_whatsapp_buttons(
+            phone_number,
+            summary,
+            [
+                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Siparişi Onayla"}}
+            ]
+        )
+        set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+    elif mode == "confirm":
+        summary += f"Ödenecek Tutar: {order_total}₺\n"
+        send_whatsapp_buttons(
+            phone_number,
+            summary,
+            [
+                {"type": "reply", "reply": {"id": "CONFIRM_ORDER", "title": "Onayla"}},
+                {"type": "reply", "reply": {"id": "CANCEL_ORDER", "title": "İptal Et"}}
+            ]
+        )
+
+
+# --------------------------------------------------------------------
+# Fonksiyon: Sipariş Özeti (Onaylama Mesajı ile)
+# --------------------------------------------------------------------
 
 # --------------------------------------------------------------------
 # 6) Sipariş Finalizasyonu (Onaylama aşaması)
@@ -766,7 +722,7 @@ def handle_button_reply(phone_number, selected_id):
         #         {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
         #     ]
         # )
-        send_order_summary_with_new_product_option(phone_number)
+        send_order_summary(phone_number)
         set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     elif selected_id == "ask_another_yes":
         ask_menu_or_product(phone_number)
@@ -919,7 +875,7 @@ def handle_list_reply(phone_number, selected_id):
         # )
         # set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
 
-        send_order_summary_with_new_product_option(phone_number)
+        send_order_summary(phone_number)
 
     else:
         send_whatsapp_text(phone_number,
@@ -1104,7 +1060,7 @@ def webhook(http_method):
                                 original_total = order["total_price"] if order else 0
                                 coupon_data = {"coupon_code": None, "original_total": original_total, "discount_amount": 0, "new_total": original_total}
                                 set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data))
-                                send_order_summary(from_phone_number)
+                                send_order_summary(from_phone_number,mode="confirm")
                             else:
                                 original_total, discount_amount, new_total, coupon_obj = calculate_coupon_discount(order_id, coupon_code)
                                 if original_total is None:
@@ -1112,7 +1068,7 @@ def webhook(http_method):
                                 else:
                                     coupon_data = {"coupon_code": coupon_code, "original_total": original_total, "discount_amount": discount_amount, "new_total": new_total}
                                     set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data))
-                                    send_order_summary(from_phone_number)
+                                    send_order_summary(from_phone_number,mode="confirm")
                         else:
                             if text_body.lower() in ["menu", "menü", "başla", "1"]:
                                 ask_menu_or_product(from_phone_number)
