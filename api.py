@@ -324,8 +324,8 @@ def calculate_coupon_discount(order_id, coupon_code):
         cur.close()
         conn.close()
         return None, "Sipariş bulunamadı.", None, None
-    original_total = order["total_price"]
-    discount = coupon["discount"]
+    original_total = float(order["total_price"])
+    discount = float(coupon["discount"])
     if 0 < discount < 1:
         discount_amount = original_total * discount
         new_total = original_total - discount_amount
