@@ -643,12 +643,7 @@ def handle_list_reply(phone_number, selected_id):
         conn.close()
         if menu:
             try:
-                # menu_products = json.loads(menu['products'])
-                print(menu)
-                cleaned_data = menu['products'].strip('{}')
-
-                # Sonra, stringleri liste formatına çevirelim
-                menu_products = [json.loads(item) for item in cleaned_data.split(',')]
+                menu_products = menu['products'][0]
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
