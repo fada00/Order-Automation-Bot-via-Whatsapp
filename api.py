@@ -157,7 +157,7 @@ def finalize_order_in_db(order_id):
 def get_product_by_id(product_id):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT id, name FROM products WHERE id = %s", (product_id,))
+    cur.execute("SELECT id, name, price FROM products WHERE id = %s", (product_id,))
     product = cur.fetchone()
     cur.close()
     conn.close()
@@ -610,7 +610,6 @@ def send_order_summary(phone_number,mode="new_product"):
 
     summary += f"\nAra Toplam: {subtotal}₺\n"
 
-    # orders tablosundan siparişin toplam fiyatını çekiyoruz
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
@@ -624,7 +623,6 @@ def send_order_summary(phone_number,mode="new_product"):
         discount = 0.0
 
     summary += f"İndirim: {discount}₺\n\n"
-    summary += "Yeni bir ürün eklemek ister misiniz?"
 
     if mode == "new_product":
         summary += "\nYeni bir ürün eklemek ister misiniz?"
@@ -647,11 +645,6 @@ def send_order_summary(phone_number,mode="new_product"):
                 {"type": "reply", "reply": {"id": "CANCEL_ORDER", "title": "İptal Et"}}
             ]
         )
-
-
-# --------------------------------------------------------------------
-# Fonksiyon: Sipariş Özeti (Onaylama Mesajı ile)
-# --------------------------------------------------------------------
 
 # --------------------------------------------------------------------
 # 6) Sipariş Finalizasyonu (Onaylama aşaması)
