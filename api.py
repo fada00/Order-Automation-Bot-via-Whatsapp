@@ -206,8 +206,20 @@ def add_option_to_order_detail(order_detail_id, option_id):
 def get_product_options(product_id):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT id, name, price FROM product_options WHERE product_id = %s", (product_id,))
+
+    cur.execute("SELECT option_ids FROM products WHERE id = %s", (product_id,))
+    result = cur.fetchone()
+
+    if not result or not result['option_ids']:
+        cur.close()
+        conn.close()
+        return []
+
+    option_ids = tuple(result['option_ids'])
+
+    cur.execute("SELECT id, name, price FROM product_options WHERE id = ANY(%s)", (option_ids,))
     rows = cur.fetchall()
+
     cur.close()
     conn.close()
     return rows
@@ -753,7 +765,6 @@ def handle_list_reply(phone_number, selected_id):
 def process_next_menu_product(phone_number):
     st = get_user_state(phone_number)
     if not st or not st.get("menu_products_queue"):
-        # Eğer queue boşsa, opsiyon işlemi tamamlanmış demektir.
         send_whatsapp_buttons(
             phone_number,
             "Menüdeki tüm ürünler için opsiyon sorgulaması tamamlandı. Başka ürün eklemek ister misiniz?",
