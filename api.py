@@ -640,6 +640,7 @@ def handle_list_reply(phone_number, selected_id):
         if menu:
             try:
                 # menu_products = json.loads(menu['products'])
+                print(menu['products'].strip('{}'))
                 cleaned_data = menu['products'].strip('{}')
 
                 # Sonra, stringleri liste formatına çevirelim
