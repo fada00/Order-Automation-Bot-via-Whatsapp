@@ -152,6 +152,16 @@ def finalize_order_in_db(order_id):
     cur.close()
     conn.close()
 
+def get_product_by_id(product_id):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT id, name FROM products WHERE id = %s", (product_id,))
+    product = cur.fetchone()
+    cur.close()
+    conn.close()
+    return product
+
+
 def add_product_to_order(order_id, product_id, quantity=1):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -784,7 +794,7 @@ def process_next_menu_product(phone_number):
         )
         set_user_state(phone_number, st["order_id"], "ASK_ANOTHER_PRODUCT", menu_products_queue=None)
         return
-    # Queue, state içinde bir sözlük olarak saklanıyor.
+
     queue_dict = st["menu_products_queue"]
     queue = queue_dict.get("order_details", [])
     if not queue:
@@ -798,18 +808,33 @@ def process_next_menu_product(phone_number):
         )
         set_user_state(phone_number, st["order_id"], "ASK_ANOTHER_PRODUCT", menu_products_queue=None)
         return
+
     next_item = queue.pop(0)  # Listenin ilk elemanını alıyoruz.
     # Güncellenmiş queue'yu state'e kaydediyoruz.
     queue_dict["order_details"] = queue
-    set_user_state(phone_number, st["order_id"], "PROCESSING_MENU_OPTIONS", last_detail_id=next_item["order_detail_id"], menu_products_queue=queue_dict)
+    set_user_state(
+        phone_number,
+        st["order_id"],
+        "PROCESSING_MENU_OPTIONS",
+        last_detail_id=next_item["order_detail_id"],
+        menu_products_queue=queue_dict
+    )
+
     # İlgili ürün için opsiyonları soruyoruz.
     product_options = get_product_options(next_item["product_id"])
+    # Ürün bilgisini alıyoruz.
+    product = get_product_by_id(next_item["product_id"])
+    product_name = product["name"] if product else "Ürün"
+
     if product_options:
-        # Opsiyon listesine ek olarak "Opsiyon seçmek istemiyorum" seçeneği ekleyelim.
         sections = [{"title": "Opsiyonlar", "rows": []}]
         for opt in product_options:
             row_id = f"option_{next_item['order_detail_id']}_{opt['id']}"
-            sections[0]["rows"].append({"id": row_id, "title": opt["name"], "description": f"+{opt['price']}₺"})
+            sections[0]["rows"].append({
+                "id": row_id,
+                "title": opt["name"],
+                "description": f"+{opt['price']}₺"
+            })
         # Ekstra seçenek: opsiyon eklemek istemiyorum.
         sections[0]["rows"].append({
             "id": f"skip_option_{next_item['order_detail_id']}",
@@ -818,14 +843,15 @@ def process_next_menu_product(phone_number):
         })
         send_whatsapp_list(
             to_phone_number=phone_number,
-            header_text="Opsiyon Seçimi",
-            body_text="Lütfen bu ürün için bir opsiyon seçin ya da opsiyon eklemeden devam edin.",
+            header_text=f"Opsiyon Seçimi - {product_name}",
+            body_text=f"Lütfen {product_name} için bir opsiyon seçin ya da opsiyonu atlamak için seçeneği kullanın.",
             button_text="Opsiyonlar",
             sections=sections
         )
     else:
         # Eğer bu ürün için opsiyon yoksa, otomatik olarak sıradaki ürüne geç.
         process_next_menu_product(phone_number)
+
 
 # --------------------------------------------------------------------
 # 8) Webhook Fonksiyonu
