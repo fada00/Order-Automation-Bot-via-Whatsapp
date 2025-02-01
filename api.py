@@ -597,6 +597,10 @@ def handle_button_reply(phone_number, selected_id):
         ask_menu_or_product(phone_number)
     elif selected_id == "NEW_ORDER":
         finalize_order_internally(phone_number)
+    elif selected_id == "ask_another_yes":
+        ask_menu_or_product(phone_number)
+    elif selected_id == "ask_another_no":
+        finalize_order(phone_number)
     else:
         send_whatsapp_text(phone_number, "Bilinmeyen buton seçimi.")
 
@@ -640,7 +644,7 @@ def handle_list_reply(phone_number, selected_id):
         if menu:
             try:
                 # menu_products = json.loads(menu['products'])
-                print(menu['products'].strip('{}'))
+                print(menu)
                 cleaned_data = menu['products'].strip('{}')
 
                 # Sonra, stringleri liste formatına çevirelim
