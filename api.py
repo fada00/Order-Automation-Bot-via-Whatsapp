@@ -165,6 +165,7 @@ def update_order_total(current_order_id,total_price):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("UPDATE orders SET total_price = %s WHERE id = %s", (total_price, current_order_id))
+    conn.commit()
     cur.close()
     conn.close()
     return True  # Başarıyla güncellendi
