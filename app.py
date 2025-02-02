@@ -21,33 +21,33 @@ def index():
     
     sql_query = text("""
     SELECT 
-        o.id AS order_id,
-        c.full_name AS customer_name,
-        c.phone_number AS customer_phone,
-        c.address AS customer_address,
-        o.created_at AS order_date,
-        o.total_price AS order_total,
-        o.status AS order_status,
-        p.name AS product_name,
-        od.quantity AS product_quantity,
-        po.name AS option_name,
-        COUNT(po.id) AS option_quantity
-    FROM 
-        orders o
-    JOIN 
-        customers c ON o.customer_id = c.id
-    JOIN 
-        order_details od ON o.id = od.order_id
-    JOIN 
-        products p ON od.product_id = p.id
-    LEFT JOIN 
-        order_options oo ON od.id = oo.order_detail_id
-    LEFT JOIN 
-        product_options po ON oo.option_id = po.id
-    GROUP BY 
-        o.id, c.id, p.id, od.id, po.id
-    ORDER BY 
-        o.created_at DESC;
+    o.id AS order_id,
+    c.full_name AS customer_name,
+    c.phone_number AS customer_phone,
+    c.address AS customer_address,
+    o.created_at AS order_date,
+    o.total_price AS order_total,
+    o.status AS order_status,
+    p.name AS product_name,
+    od.quantity AS product_quantity,
+    STRING_AGG(po.name, ', ') AS option_names,
+    od.id AS detail_id
+FROM 
+    orders o
+JOIN 
+    customers c ON o.customer_id = c.id
+JOIN 
+    order_details od ON o.id = od.order_id
+JOIN 
+    products p ON od.product_id = p.id
+LEFT JOIN 
+    order_options oo ON od.id = oo.order_detail_id
+LEFT JOIN 
+    product_options po ON oo.option_id = po.id
+GROUP BY 
+    o.id, c.id, p.id, od.id
+ORDER BY 
+    o.created_at DESC;
     """)
 
     # SQL sorgusunu çalıştır ve sonuçları al
@@ -58,7 +58,7 @@ def index():
     # Veriyi formatlama
     orders = {}
     for row in results:
-        order_id = row[0]  # order_id: Tuple'dan sırasıyla erişiyoruz
+        order_id = row[0]  # order_id
         customer_name = row[1]  # customer_name
         customer_phone = row[2]  # customer_phone
         customer_address = row[3]  # customer_address
@@ -67,26 +67,27 @@ def index():
         order_status = row[6]  # order_status
         product_name = row[7]  # product_name
         product_quantity = row[8]  # product_quantity
-        option_name = row[9]  # option_name
-        option_quantity = row[10]  # option_quantity
+        option_names = row[9]  # option_names (virgülle ayrılmış liste)
+        detail_id = row[10]  # detail_id
 
-        # Ürün ve opsiyon bilgilerini birleştiriyoruz
+        # Ürün bilgisini oluştur
         product_info = f"{product_name} x {product_quantity}"
-        option_info = f"[{option_name} x {option_quantity}]" if option_name else ""
-        full_item = f"{product_info} {option_info}"
+        option_info = f" [{option_names}]" if option_names else ""
+        full_item = f"{product_info}{option_info}"
 
         # Sipariş ID'sine göre siparişleri gruplayalım
         if order_id not in orders:
             orders[order_id] = {
-                 "id": order_id,
-                "customer_name": customer_name,
-                "phone": customer_phone,
-                "address": customer_address,
-                "date": order_date,
-                "total": order_total,
-                "status": order_status,
-                "itemss": []
-            }
+            "id": order_id,
+            "customer_name": customer_name,
+            "phone": customer_phone,
+            "address": customer_address,
+            "date": order_date,
+            "total": order_total,
+            "status": order_status,
+            "itemss": []
+        }
+
         
 
         # Ürünleri siparişin içine ekliyoruz
