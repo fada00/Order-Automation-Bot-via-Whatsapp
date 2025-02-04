@@ -14,7 +14,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOZBa87F9bqUJWJAPrjN3GfWMD1e4VSsMAhQ5EMThAZCekONNwgwaB9JTKBA2Jatedp1Dop3C94VzkRoV0A5G5E7weZBoEKswysNZBYbOx2FaACvYGSoIktU6b1TXWd2EM2TzS0xKJ1SZCIa1hhosBGUmASFugJKjZBuZBfSNBBhkuiexWX13VRvrrJxsZC0lznPtmWky0qk8PRV7L4dF9AZAlzWmhp497"
+ACCESS_TOKEN = "EAAYjJkjWxhcBOzKFQCqQ2jmnVk0Ysj9gIX9nZC2ZAJqPKFwz1ZBvppsg4RDc8moIe8CZCRZCQUsE09GFygExuOrgnhhC9PbT1IBee4JxdbCMty51WMYtZCA1JZCBimw49AY7l6cErgtCM4xntmZCp6g09tigZBDiVtFTU72rzTy7aMTUZBM7ZCS6ZCfBxn4pzo0qm270TTNAf6rpxkS87XYH7akSLjFFRWGdvkdPZCcolaCkZD"
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -235,7 +235,7 @@ def list_active_orders(phone_number, customer_id):
     cancelable = []
     non_cancelable = []
     for order in orders:
-        order_info = f"ID: {order['id']}"
+        order_info = f"Sipariş No: {order['id']}"
         if order['status'] == 'hazırlanıyor':
             cancelable.append({
                 "id": f"cancel_order_{order['id']}",
@@ -1047,7 +1047,7 @@ def handle_list_reply(phone_number, selected_id):
         order = get_order_by_id(order_id)
         if order and order['status'] == 'hazırlanıyor':
             cancel_order_in_db(order_id)
-            send_whatsapp_text(phone_number, f"Siparişiniz (ID: {order_id}) iptal edildi.")
+            send_whatsapp_text(phone_number, f"Siparişiniz (No: {order_id}) iptal edildi.")
             send_whatsapp_buttons(
                 phone_number,
                 "Yeni sipariş oluşturmak ister misiniz?",
@@ -1066,7 +1066,7 @@ def handle_list_reply(phone_number, selected_id):
         order = get_order_by_id(order_id)
         if order:
             msg = (
-                f"Sipariş ID: {order['id']}\n"
+                f"Sipariş No: {order['id']}\n"
                 f"Durum: {order['status']}\n"
                 f"Toplam: {order['total_price']}₺\n"
                 f"Adres: {order.get('address', 'Belirtilmemiş')}"
