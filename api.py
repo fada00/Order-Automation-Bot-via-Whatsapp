@@ -196,7 +196,7 @@ def get_active_orders_for_customer(customer_id):
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
         SELECT * FROM orders 
-        WHERE customer_id = %s AND status NOT IN ('teslim edildi', 'iptal')
+        WHERE customer_id = %s AND status NOT IN ('teslim edildi', 'iptal','draft')
         ORDER BY created_at DESC
     """, (customer_id,))
     orders = cur.fetchall()
@@ -232,18 +232,18 @@ def list_active_orders(phone_number, customer_id):
     cancelable = []
     non_cancelable = []
     for order in orders:
-        order_info = f"ID: {order['id']} - Durum: {order['status']} - Toplam: {order['total_price']}₺"
-        if order['status'] == 'draft':
+        order_info = f"ID: {order['id']}"
+        if order['status'] == 'hazırlanıyor':
             cancelable.append({
                 "id": f"cancel_order_{order['id']}",
                 "title": order_info,
-                "description": "İptal Et"
+                "description": f"Durum: {order['status']} - Toplam: {order['total_price']}₺ İptal Et"
             })
         else:
             non_cancelable.append({
                 "id": f"view_order_{order['id']}",
                 "title": order_info,
-                "description": "Bilgi"
+                "description": f"Durum: {order['status']} - Toplam: {order['total_price']}₺ Bilgi"
             })
 
     sections = []
