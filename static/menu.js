@@ -516,3 +516,116 @@ function saveProductChanges() {
         })
         .catch(err => console.error('Ürün güncellenirken hata oluştu:', err));
 }
+
+
+// kupon tabı
+
+document.addEventListener("DOMContentLoaded", function () {
+    fetchCoupons();
+});
+
+// Kuponları çek ve listele
+function fetchCoupons() {
+    fetch("/get_coupons")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Kuponlar alınırken hata oluştu!");
+            }
+            return response.json();
+        })
+        .then(data => {
+            const couponTableBody = document.getElementById("couponTableBody");
+            couponTableBody.innerHTML = ""; // Önceki içeriği temizle
+            
+            data.coupons.forEach(coupon => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${coupon.code}</td>
+                    <td>${coupon.discount}</td>
+                    <td>${coupon.min_price}</td>
+                    <td>${coupon.max_usage_limit}</td>
+                    <td>${coupon.current_usage}</td>
+                    <td>
+                        <button onclick="deleteCoupon('${coupon.code}')">Sil</button>
+                    </td>
+                `;
+                couponTableBody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            if (error instanceof Error) {
+                console.error("Hata:", error.message);
+            } else {
+                console.error("Hata:", error);
+            }
+        });
+}
+
+// Yeni kupon ekleme fonksiyonu
+function addCoupon() {
+    const code = document.getElementById("couponCode").value.trim();
+    const discount = parseFloat(document.getElementById("couponDiscount").value);
+    const minPrice = parseInt(document.getElementById("couponMinPrice").value,5);
+    const maxUsage = parseInt(document.getElementById("couponMaxUsage").value, 10);
+
+    if (!code || isNaN(discount) || isNaN(minPrice) || isNaN(maxUsage)) {
+        alert("Lütfen geçerli değerler girin!");
+        return;
+    }
+    if (discount <= 0) {
+        alert("İndirim oranı 0'dan büyük olmalıdır!");
+        return;
+    }
+    if (minPrice <= 0) {
+        alert("Minimum fiyat 0'dan küçük olamaz");
+        return;
+    }
+
+    const data= {
+        code: code,
+        discount: discount,
+        min_price: minPrice,
+        max_usage_limit: maxUsage,
+        current_usage: 0
+    }
+
+    fetch("/add_coupon", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify( data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (response.ok) {
+            fetchCoupons(); // Kuponları tekrar listele
+        }
+    })
+    .catch(error => console.error("Hata:", error.message));
+}
+
+// Kupon silme fonksiyonu
+function deleteCoupon(code) {
+    if (!confirm("Bu kuponu silmek istediğinizden emin misiniz?")) {
+        return;
+    }
+
+    fetch(`/delete_coupon/${code}`, {
+        method: "DELETE",
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Kupon silinemedi!");
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert(data.message);
+        if (data.message.includes("başarıyla")) {
+            fetchCoupons(); // Güncellenmiş listeyi tekrar getir
+        }
+    })
+    .catch(error => console.error("Hata:", error.message));
+}

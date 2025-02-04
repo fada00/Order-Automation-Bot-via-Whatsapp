@@ -155,7 +155,6 @@ def save_product():
         product_data = data.get('product')
         options_data = data.get('options')
 
-        print("Ürün verisi:", data)
 
         session = Session()
 
@@ -334,6 +333,53 @@ def update_product():
         return jsonify({"success": False, "message": "Ürün güncellenemedi."}), 500
     finally:
         session.close()
+
+# kupon tabı 
+
+# Kuponları listeleme
+@app.route("/get_coupons", methods=["GET"])
+def get_coupons():
+    try:
+        session = Session()
+        coupons = session.execute(text("SELECT  * FROM coupons")).fetchall()
+        session.close()
+        
+        return jsonify({"coupons": [{"code": c.code,"min_price":c.min_price, "discount": c.discount, "max_usage_limit": c.max_usage_limit,
+                                      "current_usage": c.current_usage} for c in coupons]})
+    except Exception as e:
+        print("Hata:", e)
+        return jsonify({"success": False, "message": "Başlangıç verileri alınamadı."}), 500
+
+# Kupon ekleme
+@app.route("/add_coupon", methods=["POST"])
+def add_coupon():
+    data = data.get("coupons")
+    code = data["code"]
+
+    # Eksik veri kontrolü
+    if not data.get("code") or data.get("discount") is None or data.get("max_usage_limit") is None:
+        return jsonify({"message": "Eksik veri gönderildi!"}), 400
+
+    # Aynı kodda kupon olup olmadığını kontrol et
+    
+    if code["existing"]:
+        return jsonify({"message": "Bu kupon kodu zaten mevcut!"}), 400
+
+    save_coupon = text("""
+        INSERT INTO coupons (code, discount, min_price, max_usage_limit, current_usage)
+        VALUES (:code, :discount, :min_price :max_usage_limit, :current_usage)
+    """)
+    Session.execute(save_coupon, {"code": data["code"], "discount": data["discount"],"min_price":data["min_price"],
+                                  "max_usage_limit": data["max_usage_limit"], "current_usage": data["current_usage"]})
+
+# Kupon silme
+@app.route("/delete_coupon/<string:code>", methods=["DELETE"])
+def delete_coupon(code):
+    coupon = request.json["coupons"]
+    if coupon:
+       delete_coupon = text("DELETE FROM coupons WHERE code = :code")
+
+    return jsonify({"message": "Kupon başarıyla silindi!"})
 
 @app.route('/webhook', methods=['GET','POST'])
 def webhook_app():

@@ -22,6 +22,7 @@
         <button onclick="showTab('addProductTab')" id="addProductTabButton">Ürün Ekle</button>
         <button onclick="showTab('createMenuTab')" id="createMenuTabButton">Menü Oluştur</button>
         <button onclick="showTab('updatePricesTab')" id="updatePricesTabButton">Fiyat Güncelle</button>
+        <button onclick="showTab('couponsTab')" id="couponsTabButton">Kupon Ayarları</button>
     </div>
     <div id="addProductTab" class="tab-content">
         <h2>Ürün Ekle</h2>
@@ -143,7 +144,52 @@
             </div>
         </div>
     </div>
+    <div id="couponsTab" class="tab-content">
+        <h2>Kupon Ayarları</h2>
+        <!-- Kupon ayarları için alan buraya gelecek -->
+        <div class="coupon-form-section">
+            <label for="couponCode">Kupon Kodu:</label>
+            <input type="text" id="couponCode" placeholder="Kupon kodunu girin">
+        </div>
+    
+        <div class="coupon-form-section">
+            <label for="couponDiscount">İndirim Oranı:</label>
+            <h4>(0 ile 1 arasındaki değerler yüzdelik, üzerindeki değerler miktar olarak hesaplanır)</h4>
+            <input type="number" id="couponDiscount" placeholder="İndirim oranını girin" step="0.05">
+        </div>
+    
+        <div class="coupon-form-section">
+            <label for="couponMinPrice">Minimum Sipariş Tutarı:</label>
+            <input type="number" id="couponMinPrice" placeholder="Minimum sipariş tutarını girin" step="0.01">
+        </div>
+        <div class="coupon-form-section">
+            <label for="couponMaxUsage">Kullanım Limiti:</label>
+            <input type="number" id="couponMaxUsage" placeholder="Kullanım limitini girin" step="10">
+        </div>
+    
+        <button class="add-coupon" type="button" onclick="addCoupon()">Kupon Ekle</button>
+    
+        <h3>Kuponlar</h3>
 
+        <!-- Veri Tablosu -->
+        <div id="couponsContainer">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kod</th>
+                        <th>İndirim</th>
+                        <th>Minimum Tutar</th>
+                        <th>Kullanım Limiti</th>
+                        <th>Kullanım Sayısı</th>
+                    </tr>
+                </thead>
+                <tbody id="couponTableBody">
+                    <!-- Dinamik veri satırları buraya eklenecek -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
     <script src="static/menu.js"> </script>
 </body>
 </html>
