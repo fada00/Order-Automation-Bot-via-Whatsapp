@@ -873,7 +873,7 @@ def send_order_summary(phone_number, mode="new_product"):
         )
         set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     elif mode == "confirm":
-        summary += f"Ödenecek Tutar: {order_total}₺\n"
+        summary += f"Ödenecek Tutar: {subtotal-discount}₺\n"
         send_whatsapp_buttons(
             phone_number,
             summary,
