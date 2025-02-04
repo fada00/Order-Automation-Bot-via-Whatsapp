@@ -1025,6 +1025,14 @@ def handle_button_reply(phone_number, selected_id):
     elif selected_id == "CANCEL_ORDER":
         send_whatsapp_text(phone_number, "Sipariş iptal edildi.")
         clear_user_state(phone_number)
+    elif selected_id == "new_order":
+        customer = find_customer_by_phone(phone_number)
+        if customer:
+            customer = find_customer_by_phone(phone_number)
+            ask_update_or_continue(phone_number,customer)
+        else:
+            send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
+        return
     else:
         send_whatsapp_text(phone_number, "Bilinmeyen buton seçimi.")
 
@@ -1045,7 +1053,7 @@ def handle_list_reply(phone_number, selected_id):
                 "Yeni sipariş oluşturmak ister misiniz?",
                 [
                     {"type": "reply", "reply": {"id": "new_order", "title": "Yeni Sipariş"}},
-                    {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
+                    # {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
                 ]
             )
             set_user_state(phone_number, None, "ORDER_LISTED")
