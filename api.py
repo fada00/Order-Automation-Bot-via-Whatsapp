@@ -186,29 +186,84 @@ def delete_customer_address(customer_id, index):
     conn.close()
 
 
-def create_or_get_active_order(customer_id):
+# Yeni yardımcı fonksiyonlar: aktif siparişleri getirme, belirli siparişi getirme
+def get_active_orders_for_customer(customer_id):
+    """
+    Müşterinin teslim edilmemiş ve iptal edilmemiş siparişlerini döndürür.
+    Örneğin; status değeri 'draft', 'hazırlanıyor', 'yolda' gibi olabilir.
+    """
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
-        SELECT id FROM orders
-        WHERE customer_id = %s AND status = 'draft'
+        SELECT * FROM orders 
+        WHERE customer_id = %s AND status NOT IN ('teslim edildi', 'iptal')
         ORDER BY created_at DESC
-        LIMIT 1
     """, (customer_id,))
-    row = cur.fetchone()
-    if row:
-        order_id = row[0]
-    else:
-        cur.execute("""
-            INSERT INTO orders (customer_id, total_price, status)
-            VALUES (%s, 0, 'draft')
-            RETURNING id
-        """, (customer_id,))
-        order_id = cur.fetchone()[0]
-        conn.commit()
+    orders = cur.fetchall()
     cur.close()
     conn.close()
-    return order_id
+    return orders
+
+def get_order_by_id(order_id):
+    """
+    Verilen sipariş ID'sine ait sipariş bilgisini döndürür.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
+    order = cur.fetchone()
+    cur.close()
+    conn.close()
+    return order
+
+def list_active_orders(phone_number, customer_id):
+    """
+    Müşterinin aktif siparişlerini listeler.
+    - Eğer sipariş durumu 'draft' ise iptal edilebilir (cancel_order_x şeklinde id atanır).
+    - Diğer durumlar için sadece bilgi gösterilir (view_order_x şeklinde).
+    Son bölümde “Yeni Sipariş Oluştur” seçeneği de eklenir.
+    """
+    orders = get_active_orders_for_customer(customer_id)
+    if not orders:
+        send_whatsapp_text(phone_number, "Aktif siparişiniz bulunmamaktadır. Yeni sipariş oluşturabilirsiniz.")
+        ask_menu_or_product(phone_number)
+        return
+
+    cancelable = []
+    non_cancelable = []
+    for order in orders:
+        order_info = f"ID: {order['id']} - Durum: {order['status']} - Toplam: {order['total_price']}₺"
+        if order['status'] == 'draft':
+            cancelable.append({
+                "id": f"cancel_order_{order['id']}",
+                "title": order_info,
+                "description": "İptal Et"
+            })
+        else:
+            non_cancelable.append({
+                "id": f"view_order_{order['id']}",
+                "title": order_info,
+                "description": "Bilgi"
+            })
+
+    sections = []
+    if cancelable:
+        sections.append({"title": "İptal Edilebilir Siparişler", "rows": cancelable})
+    if non_cancelable:
+        sections.append({"title": "İptal Edilemeyen Siparişler", "rows": non_cancelable})
+    # Yeni sipariş oluşturma seçeneğini ekleyelim
+    new_order_row = {"id": "new_order", "title": "Yeni Sipariş Oluştur", "description": ""}
+    sections.append({"title": "Yeni Sipariş", "rows": [new_order_row]})
+
+    send_whatsapp_list(
+        phone_number,
+        header_text="Aktif Siparişleriniz",
+        body_text="Aşağıdaki siparişleriniz bulunmaktadır:",
+        button_text="Seçiniz",
+        sections=sections
+    )
+    # Sipariş listesi gösterildiğini belirten state ayarlanıyor
+    set_user_state(phone_number, None, "ORDER_LISTED")
 
 
 def finalize_order_in_db(order_id):
@@ -973,8 +1028,65 @@ def handle_list_reply(phone_number, selected_id):
     if not st or not st["order_id"]:
         return
     order_id = st["order_id"]
+    if selected_id.startswith("cancel_order_"):
+        order_id = int(selected_id[len("cancel_order_"):])
+        order = get_order_by_id(order_id)
+        if order and order['status'] == 'draft':
+            cancel_order_in_db(order_id)
+            send_whatsapp_text(phone_number, f"Siparişiniz (ID: {order_id}) iptal edildi.")
+            send_whatsapp_buttons(
+                phone_number,
+                "Yeni sipariş oluşturmak ister misiniz?",
+                [
+                    {"type": "reply", "reply": {"id": "new_order", "title": "Yeni Sipariş"}},
+                    {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
+                ]
+            )
+            set_user_state(phone_number, None, "ORDER_LISTED")
+        else:
+            send_whatsapp_text(phone_number, "Bu sipariş iptal edilemez durumda.")
+        return
 
-    if selected_id.startswith("category_"):
+    elif selected_id.startswith("view_order_"):
+        order_id = int(selected_id[len("view_order_"):])
+        order = get_order_by_id(order_id)
+        if order:
+            msg = (
+                f"Sipariş ID: {order['id']}\n"
+                f"Durum: {order['status']}\n"
+                f"Toplam: {order['total_price']}₺\n"
+                f"Adres: {order.get('address', 'Belirtilmemiş')}"
+            )
+            send_whatsapp_text(phone_number, msg)
+            send_whatsapp_buttons(
+                phone_number,
+                "Yeni sipariş oluşturmak ister misiniz?",
+                [
+                    {"type": "reply", "reply": {"id": "new_order", "title": "Yeni Sipariş"}},
+                    {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
+                ]
+            )
+            set_user_state(phone_number, None, "ORDER_LISTED")
+        else:
+            send_whatsapp_text(phone_number, "Sipariş bulunamadı.")
+        return
+
+    elif selected_id == "new_order":
+        customer = find_customer_by_phone(phone_number)
+        if customer:
+            new_order_id = create_new_order(customer["id"])
+            set_user_state(phone_number, new_order_id, "ASK_MENU_OR_PRODUCT")
+            ask_menu_or_product(phone_number)
+        else:
+            send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
+        return
+
+    elif selected_id == "continue_order":
+        send_whatsapp_text(phone_number, "Mevcut siparişinize devam edebilirsiniz.")
+        clear_user_state(phone_number)
+        return
+
+    elif selected_id.startswith("category_"):
         category = selected_id[len("category_"):]
         send_products_and_menus_by_category(phone_number, category)
     elif selected_id.startswith("product_"):
@@ -1195,9 +1307,7 @@ def webhook(http_method):
                 # Eğer state yoksa önce aktif (hazırlanıyor / yolda) sipariş kontrolü yapıyoruz
                 if not state:
                     if customer_data:
-                        order_id = create_or_get_active_order(customer_data["id"])
-                        set_user_state(from_phone_number, order_id, "ORDER_STATUS_CHECKED")
-                        show_active_order(from_phone_number, order_id)
+                        list_active_orders(from_phone_number, customer_data["id"])
                     else:
                         set_user_state(from_phone_number, None, "ASK_NAME")
                         ask_name(from_phone_number)
@@ -1218,7 +1328,7 @@ def webhook(http_method):
                         if current_step == "ASK_NAME":
                             full_name = text_body
                             new_customer_id = create_customer(full_name, from_phone_number, reference=None)
-                            order_id = create_or_get_active_order(new_customer_id)
+                            order_id = create_new_order(new_customer_id)
                             set_user_state(from_phone_number, order_id, "ASK_REFERENCE")
                             ask_reference(from_phone_number)
                         elif current_step == "ASK_REFERENCE":
