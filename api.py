@@ -248,9 +248,9 @@ def list_active_orders(phone_number, customer_id):
 
     sections = []
     if cancelable:
-        sections.append({"title": "İptal Edilebilir Siparişler", "rows": cancelable})
+        sections.append({"title": "İptal Edilebilir", "rows": cancelable})
     if non_cancelable:
-        sections.append({"title": "İptal Edilemeyen Siparişler", "rows": non_cancelable})
+        sections.append({"title": "İptal Edilemeyen", "rows": non_cancelable})
     # Yeni sipariş oluşturma seçeneğini ekleyelim
     new_order_row = {"id": "new_order", "title": "Yeni Sipariş Oluştur", "description": ""}
     sections.append({"title": "Yeni Sipariş", "rows": [new_order_row]})
