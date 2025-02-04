@@ -146,6 +146,7 @@ def create_customer(full_name, phone_number, address="[]", reference=None):
     conn.close()
     return new_id
 
+
 def update_order_address(order_id, address):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -204,6 +205,7 @@ def get_active_orders_for_customer(customer_id):
     conn.close()
     return orders
 
+
 def get_order_by_id(order_id):
     """
     Verilen sipariş ID'sine ait sipariş bilgisini döndürür.
@@ -215,6 +217,7 @@ def get_order_by_id(order_id):
     cur.close()
     conn.close()
     return order
+
 
 def list_active_orders(phone_number, customer_id):
     """
@@ -237,13 +240,13 @@ def list_active_orders(phone_number, customer_id):
             cancelable.append({
                 "id": f"cancel_order_{order['id']}",
                 "title": order_info,
-                "description": f"Durum: {order['status']} - Toplam: {order['total_price']}₺ İptal Et"
+                "description": f"Durum: {order['status']} - Toplam: {order['total_price']}₺"
             })
         else:
             non_cancelable.append({
                 "id": f"view_order_{order['id']}",
                 "title": order_info,
-                "description": f"Durum: {order['status']} - Toplam: {order['total_price']}₺ Bilgi"
+                "description": f"Durum: {order['status']} - Toplam: {order['total_price']}₺"
             })
 
     sections = []
@@ -257,8 +260,8 @@ def list_active_orders(phone_number, customer_id):
 
     send_whatsapp_list(
         phone_number,
-        header_text="Aktif Siparişleriniz",
-        body_text="-",
+        header_text="Ana Menü",
+        body_text=None,
         button_text="Seçiniz",
         sections=sections
     )
@@ -436,6 +439,7 @@ def is_order_modifiable(order_id):
     if row:
         return row[0] == 'draft'
     return False
+
 
 def show_active_order(phone_number, order_id):
     conn = get_db_connection()
@@ -658,6 +662,7 @@ def ask_address(phone_number):
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_ADDRESS")
 
+
 def update_customer_reference(customer_id, reference):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -665,6 +670,7 @@ def update_customer_reference(customer_id, reference):
     conn.commit()
     cur.close()
     conn.close()
+
 
 def ask_address_confirmation(phone_number, current_address):
     """Unused"""
@@ -1031,7 +1037,7 @@ def handle_list_reply(phone_number, selected_id):
     if selected_id.startswith("cancel_order_"):
         order_id = int(selected_id[len("cancel_order_"):])
         order = get_order_by_id(order_id)
-        if order and order['status'] == 'draft':
+        if order and order['status'] == 'yolda':
             cancel_order_in_db(order_id)
             send_whatsapp_text(phone_number, f"Siparişiniz (ID: {order_id}) iptal edildi.")
             send_whatsapp_buttons(
@@ -1063,7 +1069,7 @@ def handle_list_reply(phone_number, selected_id):
                 "Yeni sipariş oluşturmak ister misiniz?",
                 [
                     {"type": "reply", "reply": {"id": "new_order", "title": "Yeni Sipariş"}},
-                    {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
+                    # {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
                 ]
             )
             set_user_state(phone_number, None, "ORDER_LISTED")
@@ -1169,7 +1175,6 @@ def handle_list_reply(phone_number, selected_id):
         # set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
 
         send_order_summary(phone_number)
-
 
     elif selected_id.startswith("select_address_"):
         index = int(selected_id[len("select_address_"):])
