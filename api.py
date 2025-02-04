@@ -1187,7 +1187,6 @@ def handle_list_reply(phone_number, selected_id):
         send_order_summary(phone_number)
 
     elif selected_id.startswith("select_address_"):
-        order_id = st["order_id"]
         index = int(selected_id[len("select_address_"):])
         customer = find_customer_by_phone(phone_number)
         try:
@@ -1198,6 +1197,8 @@ def handle_list_reply(phone_number, selected_id):
             addresses = []
         if index < len(addresses):
             selected_address = addresses[index]
+            order_id = create_new_order(customer.get("id"))
+            set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
             update_order_address(order_id, selected_address)
             send_whatsapp_text(phone_number, f"Seçtiğiniz adres: {selected_address}\nSiparişinize devam edebilirsiniz.")
             set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
