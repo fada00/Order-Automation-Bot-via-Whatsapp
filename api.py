@@ -1031,7 +1031,7 @@ def handle_button_reply(phone_number, selected_id):
 
 def handle_list_reply(phone_number, selected_id):
     st = get_user_state(phone_number)
-    if not st or not st["order_id"]:
+    if not st:
         return
     order_id = st["order_id"]
     if selected_id.startswith("cancel_order_"):
@@ -1091,8 +1091,9 @@ def handle_list_reply(phone_number, selected_id):
         send_whatsapp_text(phone_number, "Mevcut siparişinize devam edebilirsiniz.")
         clear_user_state(phone_number)
         return
-
-    elif selected_id.startswith("category_"):
+    if not st["order_id"]:
+        return
+    if selected_id.startswith("category_"):
         category = selected_id[len("category_"):]
         send_products_and_menus_by_category(phone_number, category)
     elif selected_id.startswith("product_"):
