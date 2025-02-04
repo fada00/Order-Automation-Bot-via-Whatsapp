@@ -137,6 +137,14 @@ def create_customer(full_name, phone_number, address="[]", reference=None):
     conn.close()
     return new_id
 
+def update_order_address(order_id, address):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET address = %s WHERE id = %s", (address, order_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 def update_customer_info(customer_id, address=None):
     if address is None:
@@ -1001,6 +1009,7 @@ def handle_list_reply(phone_number, selected_id):
 
         send_order_summary(phone_number)
 
+
     elif selected_id.startswith("select_address_"):
         index = int(selected_id[len("select_address_"):])
         customer = find_customer_by_phone(phone_number)
@@ -1008,16 +1017,16 @@ def handle_list_reply(phone_number, selected_id):
             addresses = json.loads(customer.get("address", "[]"))
             if not isinstance(addresses, list):
                 addresses = []
-        except:
+        except Exception:
             addresses = []
         if index < len(addresses):
             selected_address = addresses[index]
+            update_order_address(order_id, selected_address)
             send_whatsapp_text(phone_number, f"Seçtiğiniz adres: {selected_address}\nSiparişinize devam edebilirsiniz.")
             set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
             ask_menu_or_product(phone_number)
         else:
             send_whatsapp_text(phone_number, "Geçersiz adres seçimi.")
-        # Adres silme
     elif selected_id.startswith("delete_address_"):
         index = int(selected_id[len("delete_address_"):])
         customer = find_customer_by_phone(phone_number)
