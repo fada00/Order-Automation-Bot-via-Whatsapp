@@ -1,11 +1,10 @@
 import json
-from decimal import Decimal
 from datetime import datetime, timedelta  # Zaman aşımı için ekledik
-from email.policy import default
+from decimal import Decimal
 
+import psycopg2
 import requests
 from flask import Flask, request, jsonify
-import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
@@ -15,7 +14,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBO1e1LVr7LxgzQKoQovG7qXAwqE5fEIE5TUjyy78ulODMW0RwBZCZCz3Nq8SqYGZB1H5vZBTZCTrDo8Gm2ZAHZA5zyUfvp3sql8lvT2WA2A4jc76hL5fh6oiHL78iUKNdfBb3WVyEJO19yk4kuSX269ZCK1RAZB15fS4eZA9m6wFokrbFwXKLUwrv65247ZCwmH00OhjZBnJ4HeTIDLbHmuRhpY30BmrlMJFePNcZD"
+ACCESS_TOKEN = "EAAYjJkjWxhcBOZBa87F9bqUJWJAPrjN3GfWMD1e4VSsMAhQ5EMThAZCekONNwgwaB9JTKBA2Jatedp1Dop3C94VzkRoV0A5G5E7weZBoEKswysNZBYbOx2FaACvYGSoIktU6b1TXWd2EM2TzS0xKJ1SZCIa1hhosBGUmASFugJKjZBuZBfSNBBhkuiexWX13VRvrrJxsZC0lznPtmWky0qk8PRV7L4dF9AZAlzWmhp497"
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -27,6 +26,7 @@ DB_USER = "doadmin"
 DB_PASS = "AVNS_5cVVGMm4MB4bAZjijsd"
 DB_PORT = 25061
 
+
 def get_db_connection():
     conn = psycopg2.connect(
         host=DB_HOST,
@@ -37,6 +37,7 @@ def get_db_connection():
         sslmode="require"
     )
     return conn
+
 
 # --------------------------------------------------------------------
 # 1) WhatsApp Mesaj Gönderme Fonksiyonları
@@ -51,6 +52,7 @@ def send_whatsapp_text(to_phone_number, message_text):
     url = f"{WHATSAPP_API_URL}/{PHONE_NUMBER_ID}/messages"
     r = requests.post(url, headers=headers, json=data)
     print("send_whatsapp_text:", r.status_code, r.json())
+
 
 def send_whatsapp_list(to_phone_number, header_text, body_text, button_text, sections):
     data = {
@@ -70,6 +72,7 @@ def send_whatsapp_list(to_phone_number, header_text, body_text, button_text, sec
     r = requests.post(url, headers=headers, json=data)
     print("send_whatsapp_list:", r.status_code, r.json())
 
+
 def send_whatsapp_buttons(to_phone_number, body_text, buttons):
     data = {
         "messaging_product": "whatsapp",
@@ -86,6 +89,7 @@ def send_whatsapp_buttons(to_phone_number, body_text, buttons):
     r = requests.post(url, headers=headers, json=data)
     print("send_whatsapp_buttons:", r.status_code, r.json())
 
+
 # --------------------------------------------------------------------
 # 2) Veritabanı İşlemleri (Müşteri, Sipariş, Ürün, Opsiyon, Kupon)
 # --------------------------------------------------------------------
@@ -97,6 +101,7 @@ def find_customer_by_phone(phone_number):
     cur.close()
     conn.close()
     return row
+
 
 def create_customer(full_name, phone_number, address, reference=None):
     conn = get_db_connection()
@@ -112,6 +117,7 @@ def create_customer(full_name, phone_number, address, reference=None):
     conn.close()
     return new_id
 
+
 def update_customer_info(customer_id, address=None):
     if address is None:
         return
@@ -121,6 +127,27 @@ def update_customer_info(customer_id, address=None):
     conn.commit()
     cur.close()
     conn.close()
+
+
+def delete_customer_address(customer_id, index):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT address FROM customers WHERE id = %s", (customer_id,))
+    row = cur.fetchone()
+    addresses = []
+    if row and row.get("address"):
+        try:
+            addresses = json.loads(row["address"])
+        except:
+            addresses = []
+    if index < len(addresses):
+        del addresses[index]
+        cur = conn.cursor()
+        cur.execute("UPDATE customers SET address = %s WHERE id = %s", (json.dumps(addresses), customer_id))
+        conn.commit()
+    cur.close()
+    conn.close()
+
 
 def create_or_get_active_order(customer_id):
     conn = get_db_connection()
@@ -146,6 +173,7 @@ def create_or_get_active_order(customer_id):
     conn.close()
     return order_id
 
+
 def finalize_order_in_db(order_id):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -153,6 +181,7 @@ def finalize_order_in_db(order_id):
     conn.commit()
     cur.close()
     conn.close()
+
 
 def get_product_by_id(product_id):
     conn = get_db_connection()
@@ -162,6 +191,7 @@ def get_product_by_id(product_id):
     cur.close()
     conn.close()
     return product
+
 
 def get_options_for_order_detail(order_detail_id):
     conn = get_db_connection()
@@ -177,6 +207,7 @@ def get_options_for_order_detail(order_detail_id):
     conn.close()
     return options
 
+
 def update_order_total(current_order_id, total_price):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -185,6 +216,7 @@ def update_order_total(current_order_id, total_price):
     cur.close()
     conn.close()
     return True  # Başarıyla güncellendi
+
 
 def add_product_to_order(order_id, product_id, quantity=1, skip_total_update=False):
     conn = get_db_connection()
@@ -210,6 +242,7 @@ def add_product_to_order(order_id, product_id, quantity=1, skip_total_update=Fal
     cur.close()
     conn.close()
     return detail_id
+
 
 def add_option_to_order_detail(order_detail_id, option_id):
     conn = get_db_connection()
@@ -239,6 +272,7 @@ def add_option_to_order_detail(order_detail_id, option_id):
     cur.close()
     conn.close()
 
+
 def get_product_options(product_id):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -255,6 +289,7 @@ def get_product_options(product_id):
     conn.close()
     return rows
 
+
 def get_all_menus():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -264,6 +299,7 @@ def get_all_menus():
     conn.close()
     return rows
 
+
 def get_all_products():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -272,6 +308,7 @@ def get_all_products():
     cur.close()
     conn.close()
     return rows
+
 
 def override_order_price_to_menu(order_id, menu_base_price, order_detail_ids):
     conn = get_db_connection()
@@ -296,6 +333,7 @@ def override_order_price_to_menu(order_id, menu_base_price, order_detail_ids):
     cur.close()
     conn.close()
 
+
 def is_order_modifiable(order_id):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -306,6 +344,7 @@ def is_order_modifiable(order_id):
     if row:
         return row[0] == 'draft'
     return False
+
 
 # --- Kupon işlemleri ---
 # Kupon hesaplaması; DB güncellemesi sonrasında onay aşamasında yapılacak.
@@ -336,6 +375,7 @@ def calculate_coupon_discount(order_id, coupon_code):
     conn.close()
     return original_total, discount_amount, new_total, coupon
 
+
 # Sipariş detaylarını listelemek için yeni yardımcı fonksiyon
 def get_order_details(order_id):
     conn = get_db_connection()
@@ -350,6 +390,7 @@ def get_order_details(order_id):
     cur.close()
     conn.close()
     return details
+
 
 # --------------------------------------------------------------------
 # 3) user_states Yönetimi
@@ -369,14 +410,14 @@ def get_user_state(phone_number):
             return None
     return row
 
+
 def convert_decimal(obj):
     if isinstance(obj, Decimal):
         return float(obj)
     raise TypeError
 
+
 def set_user_state(phone_number, order_id, step, last_detail_id=None, menu_products_queue=None):
-
-
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT phone_number FROM user_states WHERE phone_number = %s", (phone_number,))
@@ -404,6 +445,22 @@ def set_user_state(phone_number, order_id, step, last_detail_id=None, menu_produ
     cur.close()
     conn.close()
 
+
+def create_new_order(customer_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO orders (customer_id, total_price, status)
+        VALUES (%s, 0, 'draft')
+        RETURNING id
+    """, (customer_id,))
+    order_id = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return order_id
+
+
 def clear_user_state(phone_number):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -412,40 +469,78 @@ def clear_user_state(phone_number):
     cur.close()
     conn.close()
 
+
 # --------------------------------------------------------------------
 # 4) Müşteri Bilgisi & Adres Akışı
 # --------------------------------------------------------------------
 def ask_update_or_continue(phone_number, customer):
-    msg = (f"Kayıtlı bilgileriniz:\n"
-           f"İsim: {customer['full_name']}\n"
-           f"Referans: {customer.get('reference','')}\n"
-           f"Adres: {customer.get('address','')}\n\n"
-           "Adresinizi güncellemek ister misiniz?")
-    send_whatsapp_buttons(
+    full_name = customer['full_name']
+    reference = customer.get('reference', '')
+    try:
+        addresses = json.loads(customer.get('address', '[]'))
+        if not isinstance(addresses, list):
+            addresses = []
+    except Exception:
+        addresses = []
+
+    display_addresses = addresses[-3:]
+    start_index = len(addresses) - len(display_addresses)
+
+    msg = f"Kayıtlı bilgileriniz:\nİsim: {full_name}\nReferans: {reference}\n"
+    msg += "Adresleriniz:\n" + "\n".join(
+        f"{start_index + idx + 1}. {addr}" for idx, addr in enumerate(display_addresses))
+    msg += "\n\nLütfen kullanmak istediğiniz adresi seçin ya da silmek istediğiniz adresi seçin. Yeni adres eklemek için de 'Yeni Adres Ekle' seçeneğini kullanın."
+
+    select_rows = []
+    delete_rows = []
+    for idx, addr in enumerate(display_addresses):
+        actual_index = start_index + idx
+        select_rows.append({
+            "id": f"select_address_{actual_index}",
+            "title": addr,
+            "description": "Kullan"
+        })
+        delete_rows.append({
+            "id": f"delete_address_{actual_index}",
+            "title": addr,
+            "description": "Sil"
+        })
+    new_address_row = {"id": "add_new_address", "title": "Yeni Adres Ekle", "description": ""}
+
+    sections = [
+        {"title": "Adres Seçimi", "rows": select_rows},
+        {"title": "Adres Silme", "rows": delete_rows},
+        {"title": "Yeni", "rows": [new_address_row]}
+    ]
+
+    send_whatsapp_list(
         phone_number,
-        msg,
-        [
-            {"type": "reply", "reply": {"id": "UPDATE_ADDRESS_YES", "title": "Evet"}},
-            {"type": "reply", "reply": {"id": "UPDATE_ADDRESS_NO", "title": "Hayır"}}
-        ]
+        header_text="Adres İşlemleri",
+        body_text=msg,
+        button_text="Seçiniz",
+        sections=sections
     )
     st = get_user_state(phone_number)
-    set_user_state(phone_number, st["order_id"], "UPDATE_OR_CONTINUE")
+    set_user_state(phone_number, st["order_id"], "ADDRESS_SELECTION")
+
 
 def ask_name(phone_number):
     send_whatsapp_text(phone_number, "Lütfen adınızı-soyadınızı giriniz:")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"] if st else None, "ASK_NAME")
 
+
 def ask_reference(phone_number):
     send_whatsapp_text(phone_number, "Varsa referans kodunuzu girin. Yoksa 'yok' yazabilirsiniz.")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_REFERENCE")
 
+
 def ask_address(phone_number):
     send_whatsapp_text(phone_number, "Lütfen adresinizi giriniz:")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_ADDRESS")
+
 
 def ask_address_confirmation(phone_number, current_address):
     body = f"Mevcut adresiniz:\n{current_address}\n\nAynı adresi kullanmak ister misiniz?"
@@ -460,16 +555,19 @@ def ask_address_confirmation(phone_number, current_address):
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ADDRESS_CONFIRM")
 
+
 def ask_new_address(phone_number):
     send_whatsapp_text(phone_number, "Lütfen yeni adresinizi giriniz:")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_NEW_ADDRESS")
+
 
 # Kupon kodu sorusuna geçiş; sipariş özetini onaylama aşamasına hazırlık yapılacak.
 def ask_coupon_code(phone_number):
     send_whatsapp_text(phone_number, "Sipariş onayından önce, lütfen kupon kodunuzu girin (yoksa 'yok' yazın):")
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_COUPON")
+
 
 # --------------------------------------------------------------------
 # 5) Menü veya Ürün Seçimi
@@ -485,6 +583,7 @@ def ask_menu_or_product(phone_number):
     )
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "ASK_MENU_OR_PRODUCT")
+
 
 def send_menus(phone_number):
     menus = get_all_menus()
@@ -508,6 +607,7 @@ def send_menus(phone_number):
         send_whatsapp_text(phone_number, "Şu anda menü bulunmamaktadır. Lütfen ürünleri seçiniz.")
         send_categories(phone_number)
 
+
 def send_categories(phone_number):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -518,7 +618,8 @@ def send_categories(phone_number):
     sections = [{"title": "Kategoriler", "rows": []}]
     for cat in categories:
         cat_val = cat[0]
-        sections[0]["rows"].append({"id": f"category_{cat_val}", "title": cat_val, "description": f"{cat_val} kategorisindeki ürünler."})
+        sections[0]["rows"].append(
+            {"id": f"category_{cat_val}", "title": cat_val, "description": f"{cat_val} kategorisindeki ürünler."})
     send_whatsapp_list(
         phone_number,
         header_text="Kategori Seçimi",
@@ -528,6 +629,7 @@ def send_categories(phone_number):
     )
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "SELECTING_CATEGORY")
+
 
 def send_products_and_menus_by_category(phone_number, category):
     conn = get_db_connection()
@@ -549,6 +651,7 @@ def send_products_and_menus_by_category(phone_number, category):
     )
     st = get_user_state(phone_number)
     set_user_state(phone_number, st["order_id"], "SELECTING_PRODUCT_BY_CATEGORY")
+
 
 # --------------------------------------------------------------------
 # Ürün Opsiyonları Sorma
@@ -576,7 +679,7 @@ def send_options_list(phone_number, order_detail_id, product_options):
     )
 
 
-def send_order_summary(phone_number,mode="new_product"):
+def send_order_summary(phone_number, mode="new_product"):
     st = get_user_state(phone_number)
     if not st:
         return
@@ -610,7 +713,7 @@ def send_order_summary(phone_number,mode="new_product"):
 
     summary += f"\nAra Toplam: {subtotal}₺\n"
     try:
-        d = json.loads(st.get("menu_products_queue",{})).get('discount_amount',0.0)
+        d = json.loads(st.get("menu_products_queue", {})).get('discount_amount', 0.0)
     except:
         d = 0.0
     conn = get_db_connection()
@@ -649,6 +752,7 @@ def send_order_summary(phone_number,mode="new_product"):
             ]
         )
 
+
 # --------------------------------------------------------------------
 # 6) Sipariş Finalizasyonu (Onaylama aşaması)
 # --------------------------------------------------------------------
@@ -662,8 +766,10 @@ def finalize_order_internally(phone_number):
         menu_info = json.loads(st["menu_products_queue"])
         override_order_price_to_menu(order_id, menu_info["menu_base_price"], menu_info["order_details"])
     finalize_order_in_db(order_id)
-    send_whatsapp_text(phone_number, "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
+    send_whatsapp_text(phone_number,
+                       "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
+
 
 # --------------------------------------------------------------------
 # 7) handle_button_reply ve handle_list_reply Fonksiyonları
@@ -732,7 +838,8 @@ def handle_button_reply(phone_number, selected_id):
         cur.close()
         conn.close()
         if order:
-            send_whatsapp_text(phone_number, f"Aktif siparişiniz:\nDurum: {order['status']}\nToplam: {order['total_price']}₺")
+            send_whatsapp_text(phone_number,
+                               f"Aktif siparişiniz:\nDurum: {order['status']}\nToplam: {order['total_price']}₺")
         else:
             send_whatsapp_text(phone_number, "Sipariş bulunamadı.")
         send_whatsapp_buttons(
@@ -782,6 +889,7 @@ def handle_button_reply(phone_number, selected_id):
         clear_user_state(phone_number)
     else:
         send_whatsapp_text(phone_number, "Bilinmeyen buton seçimi.")
+
 
 def handle_list_reply(phone_number, selected_id):
     st = get_user_state(phone_number)
@@ -873,10 +981,41 @@ def handle_list_reply(phone_number, selected_id):
 
         send_order_summary(phone_number)
 
+    elif selected_id.startswith("select_address_"):
+        index = int(selected_id[len("select_address_"):])
+        customer = find_customer_by_phone(phone_number)
+        try:
+            addresses = json.loads(customer.get("address", "[]"))
+            if not isinstance(addresses, list):
+                addresses = []
+        except:
+            addresses = []
+        if index < len(addresses):
+            selected_address = addresses[index]
+            send_whatsapp_text(phone_number, f"Seçtiğiniz adres: {selected_address}\nSiparişinize devam edebilirsiniz.")
+            set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
+            ask_menu_or_product(phone_number)
+        else:
+            send_whatsapp_text(phone_number, "Geçersiz adres seçimi.")
+        # Adres silme
+    elif selected_id.startswith("delete_address_"):
+        index = int(selected_id[len("delete_address_"):])
+        customer = find_customer_by_phone(phone_number)
+        if customer:
+            delete_customer_address(customer["id"], index)
+            send_whatsapp_text(phone_number,
+                               "Adres silindi. Lütfen işleminize devam etmek için tekrar adres seçimi yapınız.")
+            ask_update_or_continue(phone_number, customer)
+        else:
+            send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
+    elif selected_id == "add_new_address":
+        ask_new_address(phone_number)
+
     else:
         send_whatsapp_text(phone_number,
                            "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
         clear_user_state(phone_number)
+
 
 # --------------------------------------------------------------------
 # Yeni Yardımcı Fonksiyon: process_next_menu_product
@@ -946,6 +1085,7 @@ def process_next_menu_product(phone_number):
     else:
         process_next_menu_product(phone_number)
 
+
 # --------------------------------------------------------------------
 # 8) Webhook Fonksiyonu
 # --------------------------------------------------------------------
@@ -976,28 +1116,10 @@ def webhook(http_method):
                 # Eğer state yoksa önce aktif (hazırlanıyor / yolda) sipariş kontrolü yapıyoruz
                 if not state:
                     if customer_data:
-                        conn = get_db_connection()
-                        cur = conn.cursor(cursor_factory=RealDictCursor)
-                        cur.execute("""
-                            SELECT * FROM orders
-                            WHERE customer_id = %s AND status IN ('yolda', 'hazırlanıyor')
-                            ORDER BY created_at DESC
-                            LIMIT 1
-                        """, (customer_data["id"],))
-                        active_order = cur.fetchone()
-                        if active_order:
-                            send_whatsapp_text(from_phone_number, f"Mevcut siparişiniz:\nDurum: {active_order['status']}\nToplam: {active_order['total_price']}₺")
-                            clear_user_state(from_phone_number)
-                            return jsonify({"status": "ok"}), 200
-                        else:
-                            # Draft sipariş varsa siliniyor.
-                            cur.execute("DELETE FROM orders WHERE customer_id = %s AND status = 'draft'", (customer_data["id"],))
-                            conn.commit()
-                            cur.close()
-                            conn.close()
-                            order_id = create_or_get_active_order(customer_data["id"])
-                            set_user_state(from_phone_number, order_id, "UPDATE_OR_CONTINUE")
-                            ask_update_or_continue(from_phone_number, customer_data)
+                        # Artık aktif sipariş kontrolü yapılmadan yeni sipariş oluşturuluyor.
+                        order_id = create_new_order(customer_data["id"])
+                        set_user_state(from_phone_number, order_id, "UPDATE_OR_CONTINUE")
+                        ask_update_or_continue(from_phone_number, customer_data)
                     else:
                         set_user_state(from_phone_number, None, "ASK_NAME")
                         ask_name(from_phone_number)
@@ -1046,7 +1168,6 @@ def webhook(http_method):
                             coupon_code = text_body.strip()
                             order_id = state["order_id"]
                             if coupon_code.lower() == "yok":
-                                # Kupon uygulanmamış; mevcut toplamı özet olarak gösteriyoruz.
                                 conn = get_db_connection()
                                 cur = conn.cursor(cursor_factory=RealDictCursor)
                                 cur.execute("SELECT total_price FROM orders WHERE id = %s", (order_id,))
@@ -1054,17 +1175,22 @@ def webhook(http_method):
                                 cur.close()
                                 conn.close()
                                 original_total = order["total_price"] if order else 0
-                                coupon_data = {"coupon_code": None, "original_total": int(original_total), "discount_amount": 0, "new_total": int(original_total)}
-                                set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data,default=convert_decimal))
-                                send_order_summary(from_phone_number,mode="confirm")
+                                coupon_data = {"coupon_code": None, "original_total": int(original_total),
+                                               "discount_amount": 0, "new_total": int(original_total)}
+                                set_user_state(from_phone_number, order_id, "CONFIRM_ORDER",
+                                               menu_products_queue=json.dumps(coupon_data, default=convert_decimal))
+                                send_order_summary(from_phone_number, mode="confirm")
                             else:
-                                original_total, discount_amount, new_total, coupon_obj = calculate_coupon_discount(order_id, coupon_code)
+                                original_total, discount_amount, new_total, coupon_obj = calculate_coupon_discount(
+                                    order_id, coupon_code)
                                 if original_total is None:
                                     send_whatsapp_text(from_phone_number, discount_amount)  # Hata mesajı
                                 else:
-                                    coupon_data = {"coupon_code": coupon_code, "original_total": int(original_total), "discount_amount": int(discount_amount), "new_total": int(new_total)}
-                                    set_user_state(from_phone_number, order_id, "CONFIRM_ORDER", menu_products_queue=json.dumps(coupon_data,default=convert_decimal))
-                                    send_order_summary(from_phone_number,mode="confirm")
+                                    coupon_data = {"coupon_code": coupon_code, "original_total": int(original_total),
+                                                   "discount_amount": int(discount_amount), "new_total": int(new_total)}
+                                    set_user_state(from_phone_number, order_id, "CONFIRM_ORDER",
+                                                   menu_products_queue=json.dumps(coupon_data, default=convert_decimal))
+                                    send_order_summary(from_phone_number, mode="confirm")
                         else:
                             if text_body.lower() in ["menu", "menü", "başla", "1"]:
                                 ask_menu_or_product(from_phone_number)
@@ -1078,6 +1204,7 @@ def webhook(http_method):
         except Exception as e:
             print("Hata:", e)
         return jsonify({"status": "ok"}), 200
+
 
 # --------------------------------------------------------------------
 # Uygulamayı Çalıştır
