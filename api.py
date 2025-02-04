@@ -1037,7 +1037,7 @@ def handle_list_reply(phone_number, selected_id):
     if selected_id.startswith("cancel_order_"):
         order_id = int(selected_id[len("cancel_order_"):])
         order = get_order_by_id(order_id)
-        if order and order['status'] == 'yolda':
+        if order and order['status'] == 'hazırlanıyor':
             cancel_order_in_db(order_id)
             send_whatsapp_text(phone_number, f"Siparişiniz (ID: {order_id}) iptal edildi.")
             send_whatsapp_buttons(
@@ -1080,9 +1080,8 @@ def handle_list_reply(phone_number, selected_id):
     elif selected_id == "new_order":
         customer = find_customer_by_phone(phone_number)
         if customer:
-            new_order_id = create_new_order(customer["id"])
-            set_user_state(phone_number, new_order_id, "ASK_MENU_OR_PRODUCT")
-            ask_menu_or_product(phone_number)
+            customer = find_customer_by_phone(phone_number)
+            ask_update_or_continue(phone_number,customer)
         else:
             send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
         return
