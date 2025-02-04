@@ -24,7 +24,7 @@ def index():
     o.id AS order_id,
     c.full_name AS customer_name,
     c.phone_number AS customer_phone,
-    c.address AS customer_address,
+    o.address AS customer_address,
     o.created_at AS order_date,
     o.total_price AS order_total,
     o.status AS order_status,
@@ -369,7 +369,7 @@ def add_coupon():
         INSERT INTO coupons (code, discount, min_price, max_usage_limit, current_usage)
         VALUES (:code, :discount, :min_price :max_usage_limit, :current_usage)
     """)
-    Session.execute(save_coupon, {"code": data["code"], "discount": data["discount"],"min_price":data["min_price"],
+    Session.execute(save_coupon, {"code": data["code"], "discount": data["discount"],"min_price":["min_price"],
                                   "max_usage_limit": data["max_usage_limit"], "current_usage": data["current_usage"]})
 
 # Kupon silme
