@@ -261,7 +261,7 @@ def list_active_orders(phone_number, customer_id):
     send_whatsapp_list(
         phone_number,
         header_text="Ana Menü",
-        body_text=None,
+        body_text="",
         button_text="Seçiniz",
         sections=sections
     )
