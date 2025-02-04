@@ -1098,8 +1098,7 @@ def handle_list_reply(phone_number, selected_id):
         send_whatsapp_text(phone_number, "Mevcut siparişinize devam edebilirsiniz.")
         clear_user_state(phone_number)
         return
-    if not st["order_id"]:
-        return
+
     if selected_id.startswith("category_"):
         category = selected_id[len("category_"):]
         send_products_and_menus_by_category(phone_number, category)
@@ -1373,7 +1372,6 @@ def webhook(http_method):
                                 updated_customer = find_customer_by_phone(from_phone_number)
                                 ask_update_or_continue(from_phone_number, updated_customer)
                             else:
-
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
                         elif current_step == "ASK_COUPON":
                             coupon_code = text_body.strip()
