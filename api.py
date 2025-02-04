@@ -89,6 +89,25 @@ def send_whatsapp_buttons(to_phone_number, body_text, buttons):
     r = requests.post(url, headers=headers, json=data)
     print("send_whatsapp_buttons:", r.status_code, r.json())
 
+def add_address_to_customer(customer_id, new_address):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT address FROM customers WHERE id = %s", (customer_id,))
+    row = cur.fetchone()
+    addresses = []
+    if row and row.get("address"):
+        try:
+            addresses = json.loads(row["address"])
+            if not isinstance(addresses, list):
+                addresses = []
+        except Exception:
+            addresses = []
+    addresses.append(new_address)
+    cur.execute("UPDATE customers SET address = %s WHERE id = %s", (json.dumps(addresses), customer_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 # --------------------------------------------------------------------
 # 2) Veritabanı İşlemleri (Müşteri, Sipariş, Ürün, Opsiyon, Kupon)
@@ -103,7 +122,7 @@ def find_customer_by_phone(phone_number):
     return row
 
 
-def create_customer(full_name, phone_number, address, reference=None):
+def create_customer(full_name, phone_number, address="[]", reference=None):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -1139,7 +1158,7 @@ def webhook(http_method):
                         current_step = state["step"]
                         if current_step == "ASK_NAME":
                             full_name = text_body
-                            new_customer_id = create_customer(full_name, from_phone_number, address="", reference=None)
+                            new_customer_id = create_customer(full_name, from_phone_number, reference=None)
                             order_id = create_or_get_active_order(new_customer_id)
                             set_user_state(from_phone_number, order_id, "ASK_REFERENCE")
                             ask_reference(from_phone_number)
@@ -1150,17 +1169,18 @@ def webhook(http_method):
                             addr = text_body
                             c_data = find_customer_by_phone(from_phone_number)
                             if c_data:
-                                update_customer_info(c_data["id"], address=addr)
+                                add_address_to_customer(c_data["id"], addr)
                                 set_user_state(from_phone_number, state["order_id"], "ASK_MENU_OR_PRODUCT")
                                 send_whatsapp_text(from_phone_number, "Bilgileriniz kaydedildi. Lütfen seçim yapın.")
                                 ask_menu_or_product(from_phone_number)
                             else:
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
+
                         elif current_step == "ASK_NEW_ADDRESS":
                             new_addr = text_body
                             c_data = find_customer_by_phone(from_phone_number)
                             if c_data:
-                                update_customer_info(c_data["id"], address=new_addr)
+                                add_address_to_customer(c_data["id"], new_addr)
                                 ask_coupon_code(from_phone_number)
                             else:
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
