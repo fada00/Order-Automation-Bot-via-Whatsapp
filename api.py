@@ -1041,7 +1041,7 @@ def handle_list_reply(phone_number, selected_id):
     st = get_user_state(phone_number)
     if not st:
         return
-    order_id = st["order_id"]
+
     if selected_id.startswith("cancel_order_"):
         order_id = int(selected_id[len("cancel_order_"):])
         order = get_order_by_id(order_id)
@@ -1103,6 +1103,7 @@ def handle_list_reply(phone_number, selected_id):
         category = selected_id[len("category_"):]
         send_products_and_menus_by_category(phone_number, category)
     elif selected_id.startswith("product_"):
+        order_id = st["order_id"]
         product_id = int(selected_id[len("product_"):])
         if not is_order_modifiable(order_id):
             send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
@@ -1131,6 +1132,7 @@ def handle_list_reply(phone_number, selected_id):
         cur.close()
         conn.close()
         if menu:
+            order_id = st["order_id"]
             try:
                 menu_products = menu['products'][0]
             except Exception as e:
@@ -1153,6 +1155,7 @@ def handle_list_reply(phone_number, selected_id):
         else:
             send_whatsapp_text(phone_number, "Menü bulunamadı.")
     elif selected_id.startswith("option_"):
+        order_id = st["order_id"]
         parts = selected_id.split('_')
         if len(parts) == 3:
             detail_id = int(parts[1])
@@ -1184,6 +1187,7 @@ def handle_list_reply(phone_number, selected_id):
         send_order_summary(phone_number)
 
     elif selected_id.startswith("select_address_"):
+        order_id = st["order_id"]
         index = int(selected_id[len("select_address_"):])
         customer = find_customer_by_phone(phone_number)
         try:
