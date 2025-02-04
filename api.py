@@ -89,6 +89,7 @@ def send_whatsapp_buttons(to_phone_number, body_text, buttons):
     r = requests.post(url, headers=headers, json=data)
     print("send_whatsapp_buttons:", r.status_code, r.json())
 
+
 def add_address_to_customer(customer_id, new_address):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1024,6 +1025,7 @@ def handle_list_reply(phone_number, selected_id):
             delete_customer_address(customer["id"], index)
             send_whatsapp_text(phone_number,
                                "Adres silindi. Lütfen işleminize devam etmek için tekrar adres seçimi yapınız.")
+            customer = find_customer_by_phone(phone_number)
             ask_update_or_continue(phone_number, customer)
         else:
             send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
@@ -1181,8 +1183,10 @@ def webhook(http_method):
                             c_data = find_customer_by_phone(from_phone_number)
                             if c_data:
                                 add_address_to_customer(c_data["id"], new_addr)
-                                ask_coupon_code(from_phone_number)
+                                updated_customer = find_customer_by_phone(from_phone_number)
+                                ask_update_or_continue(from_phone_number, updated_customer)
                             else:
+
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
                         elif current_step == "ASK_COUPON":
                             coupon_code = text_body.strip()
