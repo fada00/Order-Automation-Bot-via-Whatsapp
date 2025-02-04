@@ -862,6 +862,7 @@ def send_order_summary(phone_number, mode="new_product"):
     summary += f"İndirim: {discount}₺\n\n"
 
     if mode == "new_product":
+        summary += f"\nToplam Tutar: {subtotal - discount}₺\n"
         summary += "\nYeni bir ürün eklemek ister misiniz?"
         send_whatsapp_buttons(
             phone_number,
