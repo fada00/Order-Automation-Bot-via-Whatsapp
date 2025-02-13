@@ -124,8 +124,11 @@ def update_order_status():
 
         return jsonify({"success": True, "message": "Sipariş durumu güncellendi."})
     except Exception as e:
+        session.rollback()
         print("Hata:", e)
         return jsonify({"success": False, "message": "Veritabanı hatası."}), 500
+    finally:
+        session.close()
     
 @app.route('/menus', methods=['GET'])
 def menus_page():
@@ -137,16 +140,17 @@ def get_initial_data():
         session = Session()
         categories = session.execute(text("SELECT DISTINCT category FROM products")).fetchall()
         options = session.execute(text("SELECT id, name, price FROM product_options")).fetchall()
-        session.close()
 
         return jsonify({
             "categories": [c[0] for c in categories],
             "options": [{"id":o[0], "name": o[1], "price": o[2]} for o in options]
         })
     except Exception as e:
+        session.rollback()
         print("Hata:", e)
         return jsonify({"success": False, "message": "Başlangıç verileri alınamadı."}), 500
-
+    finally:
+        session.close()
 
 @app.route('/menus/save-product', methods=['POST'])
 def save_product():
@@ -201,13 +205,15 @@ def save_product():
         session.execute(update_product_query, {"option_ids": option_ids, "product_id": product_id})
 
         session.commit()
-        session.close()
 
         return jsonify({"success": True, "message": "Ürün başarıyla kaydedildi."})
     except Exception as e:
+        session.rollback()
         print("Hata:", e)
         return jsonify({"success": False, "message": "Ürün kaydedilemedi."}), 500
     
+    finally: 
+        session.close()
 ### menü tabı için
 
 @app.route('/menus/get-products', methods=['GET'])
@@ -254,12 +260,15 @@ def save_menu():
         menu_id = result.fetchone()[0]
 
         session.commit()
-        session.close()
         return jsonify({"success": True, "message": "Menü başarıyla kaydedildi."})
+   
     except Exception as e:
+        session.rollback()
         print("Hata:", e)
         return jsonify({"success": False, "message": "Menü kaydedilemedi."}), 500
     
+    finally:
+        session.close()
 
 #ürün güncelleme tabı için 
 

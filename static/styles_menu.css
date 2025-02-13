@@ -388,6 +388,10 @@ th{
     border-radius: 8px;
     width: 400px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    
+}
+.popup-content label{
+    margin-bottom: 10px;
 }
 
 .popup-content h3 {
@@ -455,4 +459,42 @@ h4 {
 
 .coupons-container{
     margin: 70px 30px 70px 30px;
+}
+.dataContainer {
+    margin: 0px 30px 70px 30px;
+
+}
+.item-select{
+    margin: 30px ;
+}
+
+.delete-button-price{
+    margin-left: 20px;
+    background-color: rgb(180, 14, 14);
+    font-size: 14px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 20px;
+}
+
+.edit-button{
+    background-color: #c7b514;
+    color: black;
+    border: none;
+    font-size: 14px;
+    border-radius: 5px;
+    padding: 5px 20px;
+    margin-left: 20px;
+} 
+
+.delete-coupon{
+    margin-left: 50px;
+    background-color: rgb(180, 14, 14);
+    color: white;
+    border: none;
+    font-size: 14px;
+    border-radius: 5px;
+    padding: 5px 20px;
+    
 }

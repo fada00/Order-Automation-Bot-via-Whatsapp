@@ -100,15 +100,16 @@
         <h2>Fiyat Güncelle</h2>
         <!-- Fiyat güncelleme için alan buraya gelecek -->   
             <!-- Dropdown Seçenekleri -->
-            <label for="itemSelect">Seçenek:</label>
-            <select id="itemSelect" onchange="loadData()">
-                <option value="">Seçiniz</option>
-                <option value="products">Ürünler</option>
-                <option value="menus">Menüler</option>
-            </select>
-        
+             <div class="item-select">
+                <label for="itemSelect">Seçenek:</label>
+                <select id="itemSelect" onchange="loadData()">
+                    <option value="">Seçiniz</option>
+                    <option value="products">Ürünler</option>
+                    <option value="menus">Menüler</option>
+                </select>
+            </div>
             <!-- Veri Tablosu -->
-            <div id="dataContainer">
+            <div id="dataContainer" class="dataContainer">
                 <table>
                     <thead>
                         <tr>
@@ -134,7 +135,7 @@
                         <input type="text" id="editName">
                     </div>
                    <div
-                    <label for="editPrice">Fiyat:</label>
+                    <label for="editPrice"> Fiyat:</label>
                     <input type="number" id="editPrice" step="0.25">
                     </div>
             
@@ -182,6 +183,7 @@
                         <th>Minimum Tutar</th>
                         <th>Kullanım Limiti</th>
                         <th>Kullanım Sayısı</th>
+                        <th>işlemler</th>
                     </tr>
                 </thead>
                 <tbody id="couponTableBody">

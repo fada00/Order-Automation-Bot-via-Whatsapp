@@ -405,6 +405,7 @@ function loadData() {
                 editButton.onclick = () => openEditModal(item);
 
                 const deleteButton = document.createElement('button');
+                deleteButton.classList.add("delete-button-price");
                 deleteButton.textContent = 'Sil';
                 deleteButton.onclick = () => deleteItem(selectedOption, item.id);
 
@@ -546,7 +547,7 @@ function fetchCoupons() {
                     <td>${coupon.max_usage_limit}</td>
                     <td>${coupon.current_usage}</td>
                     <td>
-                        <button onclick="deleteCoupon('${coupon.code}')">Sil</button>
+                        <button class="delete-coupon" onclick="deleteCoupon('${coupon.code}')">Sil</button>
                     </td>
                 `;
                 couponTableBody.appendChild(row);
