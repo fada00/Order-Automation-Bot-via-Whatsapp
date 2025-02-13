@@ -14,7 +14,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOZBa87F9bqUJWJAPrjN3GfWMD1e4VSsMAhQ5EMThAZCekONNwgwaB9JTKBA2Jatedp1Dop3C94VzkRoV0A5G5E7weZBoEKswysNZBYbOx2FaACvYGSoIktU6b1TXWd2EM2TzS0xKJ1SZCIa1hhosBGUmASFugJKjZBuZBfSNBBhkuiexWX13VRvrrJxsZC0lznPtmWky0qk8PRV7L4dF9AZAlzWmhp497"
+ACCESS_TOKEN = "EAAYjJkjWxhcBO7LYII4UeGqU9bf4cbh4PAQ5vtSxePlV9GHONag9LYWzLsoBiFtQetGqXqcKBLWRFduqMlF7pSZAizpQ2ZA2TY0BNRLCIWmhgNJpxGCZCaRQHCoiMbOTevCezancU3sZAjloZBuAxdchSoFZC0OlJTp0vR5VBZBjYwlwrj21ZAZA5LZAlH3RZC1Dv5KqjK8RPqpSPdMcgOualWm7eystbpzby7wOojR3VS5v4MZD"
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -235,7 +235,7 @@ def list_active_orders(phone_number, customer_id):
     cancelable = []
     non_cancelable = []
     for order in orders:
-        order_info = f"ID: {order['id']}"
+        order_info = f"Sipariş No: {order['id']}"
         if order['status'] == 'hazırlanıyor':
             cancelable.append({
                 "id": f"cancel_order_{order['id']}",
@@ -862,6 +862,7 @@ def send_order_summary(phone_number, mode="new_product"):
     summary += f"İndirim: {discount}₺\n\n"
 
     if mode == "new_product":
+        summary += f"\nToplam Tutar: {subtotal - discount}₺\n"
         summary += "\nYeni bir ürün eklemek ister misiniz?"
         send_whatsapp_buttons(
             phone_number,
@@ -873,7 +874,7 @@ def send_order_summary(phone_number, mode="new_product"):
         )
         set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     elif mode == "confirm":
-        summary += f"Ödenecek Tutar: {order_total}₺\n"
+        summary += f"Ödenecek Tutar: {subtotal-discount}₺\n"
         send_whatsapp_buttons(
             phone_number,
             summary,
@@ -1025,27 +1026,35 @@ def handle_button_reply(phone_number, selected_id):
     elif selected_id == "CANCEL_ORDER":
         send_whatsapp_text(phone_number, "Sipariş iptal edildi.")
         clear_user_state(phone_number)
+    elif selected_id == "new_order":
+        customer = find_customer_by_phone(phone_number)
+        if customer:
+            customer = find_customer_by_phone(phone_number)
+            ask_update_or_continue(phone_number,customer)
+        else:
+            send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
+        return
     else:
         send_whatsapp_text(phone_number, "Bilinmeyen buton seçimi.")
 
 
 def handle_list_reply(phone_number, selected_id):
     st = get_user_state(phone_number)
-    if not st or not st["order_id"]:
+    if not st:
         return
-    order_id = st["order_id"]
+
     if selected_id.startswith("cancel_order_"):
         order_id = int(selected_id[len("cancel_order_"):])
         order = get_order_by_id(order_id)
-        if order and order['status'] == 'yolda':
+        if order and order['status'] == 'hazırlanıyor':
             cancel_order_in_db(order_id)
-            send_whatsapp_text(phone_number, f"Siparişiniz (ID: {order_id}) iptal edildi.")
+            send_whatsapp_text(phone_number, f"Siparişiniz (No: {order_id}) iptal edildi.")
             send_whatsapp_buttons(
                 phone_number,
                 "Yeni sipariş oluşturmak ister misiniz?",
                 [
                     {"type": "reply", "reply": {"id": "new_order", "title": "Yeni Sipariş"}},
-                    {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
+                    # {"type": "reply", "reply": {"id": "continue_order", "title": "Devam Et"}}
                 ]
             )
             set_user_state(phone_number, None, "ORDER_LISTED")
@@ -1058,7 +1067,7 @@ def handle_list_reply(phone_number, selected_id):
         order = get_order_by_id(order_id)
         if order:
             msg = (
-                f"Sipariş ID: {order['id']}\n"
+                f"Sipariş No: {order['id']}\n"
                 f"Durum: {order['status']}\n"
                 f"Toplam: {order['total_price']}₺\n"
                 f"Adres: {order.get('address', 'Belirtilmemiş')}"
@@ -1080,9 +1089,8 @@ def handle_list_reply(phone_number, selected_id):
     elif selected_id == "new_order":
         customer = find_customer_by_phone(phone_number)
         if customer:
-            new_order_id = create_new_order(customer["id"])
-            set_user_state(phone_number, new_order_id, "ASK_MENU_OR_PRODUCT")
-            ask_menu_or_product(phone_number)
+            customer = find_customer_by_phone(phone_number)
+            ask_update_or_continue(phone_number,customer)
         else:
             send_whatsapp_text(phone_number, "Müşteri kaydı bulunamadı.")
         return
@@ -1092,10 +1100,11 @@ def handle_list_reply(phone_number, selected_id):
         clear_user_state(phone_number)
         return
 
-    elif selected_id.startswith("category_"):
+    if selected_id.startswith("category_"):
         category = selected_id[len("category_"):]
         send_products_and_menus_by_category(phone_number, category)
     elif selected_id.startswith("product_"):
+        order_id = st["order_id"]
         product_id = int(selected_id[len("product_"):])
         if not is_order_modifiable(order_id):
             send_whatsapp_text(phone_number, "Mevcut sipariş düzenlenemez.")
@@ -1124,6 +1133,7 @@ def handle_list_reply(phone_number, selected_id):
         cur.close()
         conn.close()
         if menu:
+            order_id = st["order_id"]
             try:
                 menu_products = menu['products'][0]
             except Exception as e:
@@ -1146,6 +1156,7 @@ def handle_list_reply(phone_number, selected_id):
         else:
             send_whatsapp_text(phone_number, "Menü bulunamadı.")
     elif selected_id.startswith("option_"):
+        order_id = st["order_id"]
         parts = selected_id.split('_')
         if len(parts) == 3:
             detail_id = int(parts[1])
@@ -1187,6 +1198,8 @@ def handle_list_reply(phone_number, selected_id):
             addresses = []
         if index < len(addresses):
             selected_address = addresses[index]
+            order_id = create_new_order(customer.get("id"))
+            set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
             update_order_address(order_id, selected_address)
             send_whatsapp_text(phone_number, f"Seçtiğiniz adres: {selected_address}\nSiparişinize devam edebilirsiniz.")
             set_user_state(phone_number, order_id, "ASK_MENU_OR_PRODUCT")
@@ -1365,7 +1378,6 @@ def webhook(http_method):
                                 updated_customer = find_customer_by_phone(from_phone_number)
                                 ask_update_or_continue(from_phone_number, updated_customer)
                             else:
-
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
                         elif current_step == "ASK_COUPON":
                             coupon_code = text_body.strip()
