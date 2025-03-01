@@ -118,6 +118,19 @@ def add_address_to_customer(customer_id, new_address):
     conn.close()
 
 
+def ask_payment_method(phone_number):
+    send_whatsapp_buttons(
+        phone_number,
+        "Ödeme yönteminizi seçin:",
+        [
+            {"type": "reply", "reply": {"id": "PAYMENT_CASH", "title": "Kapıda Nakit"}},
+            {"type": "reply", "reply": {"id": "PAYMENT_CREDIT", "title": "Kapıda Kredi Kartı"}},
+            {"type": "reply", "reply": {"id": "PAYMENT_MEAL", "title": "Yemek Kartı"}}
+        ]
+    )
+    st = get_user_state(phone_number)
+    set_user_state(phone_number, st["order_id"], "ASK_PAYMENT_METHOD")
+
 # --------------------------------------------------------------------
 # 2) Veritabanı İşlemleri (Müşteri, Sipariş, Ürün, Opsiyon, Kupon)
 # --------------------------------------------------------------------
@@ -195,7 +208,14 @@ def delete_customer_address(customer_id, index):
     conn.close()
 
 
-# Yeni yardımcı fonksiyonlar: aktif siparişleri getirme, belirli siparişi getirme
+def update_order_payment_method(order_id, payment_method):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET payment_method = %s WHERE id = %s", (payment_method, order_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 def get_active_orders_for_customer(customer_id):
     """
     Müşterinin teslim edilmemiş ve iptal edilmemiş siparişlerini döndürür.
@@ -1038,8 +1058,20 @@ def handle_button_reply(phone_number, selected_id):
             conn.commit()
             cur.close()
             conn.close()
+        ask_payment_method(phone_number)
+    elif selected_id in ["PAYMENT_CASH", "PAYMENT_CREDIT", "PAYMENT_MEAL"]:
+        if selected_id == "PAYMENT_CASH":
+            payment_method = "Kapıda Nakit"
+        elif selected_id == "PAYMENT_CREDIT":
+            payment_method = "Kapıda Kredi Kartı"
+        elif selected_id == "PAYMENT_MEAL":
+            payment_method = "Yemek Kartı"
+        else:
+            payment_method = None
         finalize_order_in_db(order_id)
-        send_whatsapp_text(phone_number, f"Siparişiniz onaylandı! (Sip No: {order_id}) Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
+        update_order_payment_method(order_id, payment_method)
+        send_whatsapp_text(phone_number,
+                           f"Siparişiniz onaylandı! (Sip No: {order_id})\nÖdeme yöntemi: {payment_method}\nTeşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
         clear_user_state(phone_number)
     elif selected_id == "CANCEL_ORDER":
         send_whatsapp_text(phone_number, "Sipariş iptal edildi.")
