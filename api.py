@@ -244,7 +244,7 @@ def list_active_orders(phone_number, customer_id):
     non_cancelable = []
     for order in orders:
         order_info = f"Sipariş No: {order['id']}"
-        if order['status'] == 'hazırlanıyor':
+        if order['status'] == 'hazırlanıyor' and is_order_modifiable(order['id']):
             cancelable.append({
                 "id": f"cancel_order_{order['id']}",
                 "title": order_info,
@@ -264,8 +264,9 @@ def list_active_orders(phone_number, customer_id):
         sections.append({"title": "İptal Edilemeyen", "rows": non_cancelable})
     # Yeni sipariş oluşturma seçeneğini ekleyelim
     new_order_row = {"id": "new_order", "title": "Yeni Sipariş Oluştur", "description": ""}
+    contact_us = {"id": "CONTACT_US", "title": "Maydonoz Döner ODTÜ", "description": ""}
     sections.append({"title": "Yeni Sipariş", "rows": [new_order_row]})
-
+    sections.append({"title": "İletişime Geç", "rows": [contact_us]})
     send_whatsapp_list(
         phone_number,
         header_text="Ana Menü",
@@ -445,7 +446,10 @@ def is_order_modifiable(order_id):
     cur.close()
     conn.close()
     if row:
-        return row[0] == 'draft'
+        status = row[0]
+        created_at = row[1]
+        if status == 'hazırlaniyor' and (datetime.utcnow() - created_at) <= timedelta(minutes=5):
+            return True
     return False
 
 
@@ -901,13 +905,11 @@ def finalize_order_internally(phone_number):
     if not st:
         return
     order_id = st["order_id"]
-    # Menü siparişlerinde ek hesaplama yapılmış olabilir.
     if st.get("menu_products_queue") and st["step"] == "PROCESSING_MENU_OPTIONS":
         menu_info = json.loads(st["menu_products_queue"])
         override_order_price_to_menu(order_id, menu_info["menu_base_price"], menu_info["order_details"])
     finalize_order_in_db(order_id)
-    send_whatsapp_text(phone_number,
-                       "Siparişiniz onaylandı! Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
+    send_whatsapp_text(phone_number, f"Siparişiniz onaylandı! (Sip No: {order_id}) Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
     clear_user_state(phone_number)
 
 
@@ -931,6 +933,8 @@ def handle_button_reply(phone_number, selected_id):
         clear_user_state(phone_number)
     elif selected_id == "choose_products":
         send_categories(phone_number)
+    elif selected_id == "CONTACT_US":
+        send_whatsapp_text(phone_number, "Bize ulaşmak için lütfen (0312) 920 07 06 numarasını arayın.")
     elif selected_id == "UPDATE_ADDRESS_YES":
         ask_address(phone_number)
     elif selected_id == "UPDATE_ADDRESS_NO":
@@ -1035,7 +1039,7 @@ def handle_button_reply(phone_number, selected_id):
             cur.close()
             conn.close()
         finalize_order_in_db(order_id)
-        send_whatsapp_text(phone_number, "Siparişiniz onaylandı! Teşekkürler.")
+        send_whatsapp_text(phone_number, f"Siparişiniz onaylandı! (Sip No: {order_id}) Teşekkürler.\nYeni sipariş için istediğiniz zaman yazabilirsiniz.")
         clear_user_state(phone_number)
     elif selected_id == "CANCEL_ORDER":
         send_whatsapp_text(phone_number, "Sipariş iptal edildi.")
@@ -1131,7 +1135,7 @@ def handle_list_reply(phone_number, selected_id):
         else:
             send_whatsapp_buttons(
                 phone_number,
-                "Ürün eklendi. Bu ürün için opsiyon bulunmamaktadır. Başka ürün eklemek ister misiniz?",
+                "Ürün eklendi. Başka ürün eklemek ister misiniz?",
                 [
                     {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
                     {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
@@ -1249,28 +1253,30 @@ def handle_list_reply(phone_number, selected_id):
 def process_next_menu_product(phone_number):
     st = get_user_state(phone_number)
     if not st or not st.get("menu_products_queue"):
-        send_whatsapp_buttons(
-            phone_number,
-            "Menüdeki tüm ürünler için opsiyon sorgulaması tamamlandı. Başka ürün eklemek ister misiniz?",
-            [
-                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
-                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
-            ]
-        )
+        send_order_summary(phone_number)
+        # send_whatsapp_buttons(
+        #     phone_number,
+        #     "Başka ürün eklemek ister misiniz?",
+        #     [
+        #         {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+        #         {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+        #     ]
+        # )
         set_user_state(phone_number, st["order_id"], "ASK_ANOTHER_PRODUCT", menu_products_queue=None)
         return
 
     queue_dict = st["menu_products_queue"]
     queue = queue_dict.get("order_details", [])
     if not queue:
-        send_whatsapp_buttons(
-            phone_number,
-            "Menüdeki tüm ürünler için opsiyon sorgulaması tamamlandı. Başka ürün eklemek ister misiniz?",
-            [
-                {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
-                {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
-            ]
-        )
+        send_order_summary(phone_number)
+        # send_whatsapp_buttons(
+        #     phone_number,
+        #     "Başka ürün eklemek ister misiniz?",
+        #     [
+        #         {"type": "reply", "reply": {"id": "ask_another_yes", "title": "Evet"}},
+        #         {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
+        #     ]
+        # )
         set_user_state(phone_number, st["order_id"], "ASK_ANOTHER_PRODUCT", menu_products_queue=None)
         return
 
