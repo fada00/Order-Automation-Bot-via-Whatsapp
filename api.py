@@ -971,8 +971,14 @@ def handle_button_reply(phone_number, selected_id):
         #         {"type": "reply", "reply": {"id": "ask_another_no", "title": "Hayır"}}
         #     ]
         # )
-        send_order_summary(phone_number)
-        set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+        # send_order_summary(phone_number)
+        # set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
+
+        if st and st.get("menu_products_queue"):
+            process_next_menu_product(phone_number)
+        else:
+            send_order_summary(phone_number)
+            set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
     elif selected_id == "ask_another_yes":
         ask_menu_or_product(phone_number)
     elif selected_id == "ask_another_no":
@@ -1147,6 +1153,8 @@ def handle_list_reply(phone_number, selected_id):
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
+            if menu_products and isinstance(menu_products[0], list):
+                menu_products = menu_products[0]
             print(menu_products)
             menu_queue = []
             update_order_total(order_id, menu.get("price", 0))
@@ -1194,8 +1202,8 @@ def handle_list_reply(phone_number, selected_id):
         # )
         # set_user_state(phone_number, order_id, "ASK_ANOTHER_PRODUCT")
 
-        send_order_summary(phone_number)
-
+        # send_order_summary(phone_number)
+        process_next_menu_product(phone_number)
     elif selected_id.startswith("select_address_"):
         index = int(selected_id[len("select_address_"):])
         customer = find_customer_by_phone(phone_number)
