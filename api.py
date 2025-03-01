@@ -1147,6 +1147,7 @@ def handle_list_reply(phone_number, selected_id):
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
+            print(menu_products)
             menu_queue = []
             update_order_total(order_id, menu.get("price", 0))
             for item in menu_products:
