@@ -6,7 +6,7 @@ import psycopg2
 import requests
 from flask import Flask, request, jsonify
 from psycopg2.extras import RealDictCursor
-
+import re
 app = Flask(__name__)
 
 # --------------------------------------------------------------------
@@ -14,7 +14,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOyxijZCXZAe32SxqOEGOGTEgzK7Y7XZBgZBIMJQwKqMld1YVS2X4LfCnxLXMhrSgCBZCUko0ybhw6XZAbSdkikT2q7YgYEHe5PYdQIx7C14Qi8BFJPzKnUZBTZAMZB5uIFU4103NTnpZBMd9RL1n6JSC27KtsU8EgfSIvKXIynFljxXOStXUy7UC39wPRZBVT5ZAOufW8ZAGZCyIFZAHsfyAEtEZBj93h2K6RbsRTRQZD"
+ACCESS_TOKEN = "EAAYjJkjWxhcBO3y6CeQosFIqBeeC8PhmvBZAhPxH4vKyQZBXMPThhTBLV5WlHJ1lJrrWHZAdiw5CWCJzSgnxjefagEZAlewZCBfVAvYDxc3vCLLQzAVsJ1TKlFXPanf6OzBU9EIwLtcJoZAC6ltNwknYWgvhBeiCd1arSNGiZBiq52QZCYInhBWrcxa4kYTQdruI2GaQpbNZBnhwf6oL63lPZAUhjuDBmYW3mnzAzk81cZD"
 PHONE_NUMBER_ID = "459475243924742"
 
 # --------------------------------------------------------------------
@@ -37,6 +37,14 @@ def get_db_connection():
         sslmode="require"
     )
     return conn
+
+def increment_customer_ref_count(customer_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE customers SET ref_count = ref_count + 1 WHERE id = %s", (customer_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 # --------------------------------------------------------------------
@@ -1135,7 +1143,7 @@ def handle_list_reply(phone_number, selected_id):
         if menu:
             order_id = st["order_id"]
             try:
-                menu_products = menu['products'][0]
+                menu_products = menu['products']
             except Exception as e:
                 send_whatsapp_text(phone_number, "Menü ürünleri okunamadı.")
                 return
@@ -1354,11 +1362,17 @@ def webhook(http_method):
                             c_data = find_customer_by_phone(from_phone_number)
                             if c_data:
                                 if ref.lower() != "yok":
+                                    if not re.match(r"^90\d{10}$", ref):
+                                        send_whatsapp_text(from_phone_number,
+                                                           "Referans numarası 905555555555 formatında olmalıdır. Lütfen tekrar deneyin.")
+                                        return jsonify({"status": "error", "message": "Invalid reference format"}), 200
                                     update_customer_reference(c_data["id"], ref)
+                                    increment_customer_ref_count(c_data["id"])
                                 set_user_state(from_phone_number, state["order_id"], "ASK_ADDRESS")
                                 ask_address(from_phone_number)
                             else:
                                 send_whatsapp_text(from_phone_number, "Müşteri kaydı hatası!")
+
                         elif current_step == "ASK_ADDRESS":
                             addr = text_body
                             c_data = find_customer_by_phone(from_phone_number)
