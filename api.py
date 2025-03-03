@@ -468,7 +468,7 @@ def is_order_modifiable(order_id):
     if row:
         status = row[0]
         created_at = row[1]
-        if status == 'hazırlaniyor' and (datetime.utcnow() - created_at) <= timedelta(minutes=5):
+        if (status == 'hazırlaniyor' and (datetime.utcnow() - created_at) <= timedelta(minutes=5) or status == 'draft'):
             return True
     return False
 
@@ -1184,8 +1184,6 @@ def handle_list_reply(phone_number, selected_id):
         conn.close()
         if menu:
             order_id = st["order_id"]
-            if not order_id:
-                order_id = create_new_order(st.get("id"))
             try:
                 menu_products = menu['products']
             except Exception as e:
