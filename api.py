@@ -461,7 +461,7 @@ def override_order_price_to_menu(order_id, menu_base_price, order_detail_ids):
 def is_order_modifiable(order_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT status FROM orders WHERE id = %s", (order_id,))
+    cur.execute("SELECT status,created_at FROM orders WHERE id = %s", (order_id,))
     row = cur.fetchone()
     cur.close()
     conn.close()
