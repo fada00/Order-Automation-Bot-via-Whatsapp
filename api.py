@@ -1183,7 +1183,9 @@ def handle_list_reply(phone_number, selected_id):
         cur.close()
         conn.close()
         if menu:
-            order_id = create_new_order(st.get("id"))
+            order_id = st["order_id"]
+            if not order_id:
+                order_id = create_new_order(st.get("id"))
             try:
                 menu_products = menu['products']
             except Exception as e:
