@@ -14,7 +14,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBO8vgESICpEffdArG7QyAYwMGHCiy3KGdFz5AFfx4rZA5R2gwQLQiecK1nyZAqUThflQavgatRn7OnBlVAaFsiZCKtYMm9v23rPB2fRnVYpiekZARoE5mCZAbdj3HExdT9Yc5RIfgySHn8SaJcuUqjc634jZC0weGaCr2f75AfdFLZCG7EMgfBLIsnQ4YNdFGihCvN8m1lWlNKXdbKQPOyhjYt0kQXWMww8ZD"
+ACCESS_TOKEN = "EAAYjJkjWxhcBOy8QkOqRMypFRD3ZA21BuEu0kvfZCECG0Td2YXitwzo7xA1uqo3egDIeAVi8oHlFnEb9urKIlDsy6JDMEDGCvgC310UE33pIJLfxW2Qs0vyPeGaGgkmw1FpzW196UA2LluDRBILm9OorFwxo1Uav7LOcUTHTBuZBjrUcGu8FumxHcw1gmAt9BOxCD0qstGv9p5rE4g21Uf8ZAD7vBZAu2CUi7M7t6FZCMZD"
 PHONE_NUMBER_ID = "537929752729469"
 
 # --------------------------------------------------------------------
