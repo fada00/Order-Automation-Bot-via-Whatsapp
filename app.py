@@ -1,8 +1,13 @@
 import json
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from flask import Flask, render_template, jsonify, request
-from sqlalchemy import create_engine, MetaData, Table, select, join,text
+import threading
+import time
+from datetime import datetime
+from decimal import Decimal
+from sqlalchemy import create_engine, MetaData, Table, select, join, text
 from sqlalchemy.orm import sessionmaker
+from flask import Flask, render_template, jsonify, request
+from flask_socketio import SocketIO
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 import api
 # Veri tabanı bağlantısı
 engine = create_engine("postgresql://doadmin:AVNS_5cVVGMm4MB4bAZjijsd@db-postgresql-fra1-87481-do-user-18505233-0.h.db.ondigitalocean.com:25061/dbpool?sslmode=require")  # PostgreSQL bilgilerinizi ekleyin
@@ -10,10 +15,15 @@ metadata = MetaData()
 
 # Flask uygulaması
 app = Flask(__name__)
+socketio = SocketIO(app) 
 Session = sessionmaker(bind=engine)
+
+last_known_order_id = None
 
 @app.route('/')
 def index():
+    return render_template("home.html",orders=fetch_orders())
+def fetch_orders():
     # SQL sorgusunu text() ile sarıyoruz
     #WHERE 
     #o.created_at >= DATE_ADD(CURDATE(), INTERVAL 4 HOUR) 
@@ -28,6 +38,7 @@ def index():
     o.created_at AS order_date,
     o.total_price AS order_total,
     o.status AS order_status,
+    o.payment_method AS payment,
     p.name AS product_name,
     od.quantity AS product_quantity,
     STRING_AGG(po.name, ', ') AS option_names,
@@ -65,15 +76,22 @@ ORDER BY
         order_date = row[4]  # order_date
         order_total = row[5]  # order_total
         order_status = row[6]  # order_status
-        product_name = row[7]  # product_name
-        product_quantity = row[8]  # product_quantity
-        option_names = row[9]  # option_names (virgülle ayrılmış liste)
-        detail_id = row[10]  # detail_id
+        payment = row[7]  # payment method
+        product_name = row[8]  # product_name
+        product_quantity = row[9]  # product_quantity
+        option_names = row[10]  # option_names (virgülle ayrılmış liste)
+        detail_id = row[11]  # detail_id
+
+        if isinstance(order_total, Decimal):
+            order_total = float(order_total)
+        if isinstance(order_date, datetime):
+            order_date = order_date.strftime('%Y-%m-%d %H:%M:%S')
+
 
         # Ürün bilgisini oluştur
-        product_info = f"{product_name} x {product_quantity}"
         option_info = f" [{option_names}]" if option_names else ""
-        full_item = f"{product_info}{option_info}"
+        full_item = f"{product_name}{option_info}"
+
 
         # Sipariş ID'sine göre siparişleri gruplayalım
         if order_id not in orders:
@@ -85,17 +103,65 @@ ORDER BY
             "date": order_date,
             "total": order_total,
             "status": order_status,
+            "payment": payment,
+            "items_dict": {},
             "itemss": []
         }
 
-        
+        if full_item in orders[order_id]["items_dict"]:
+            orders[order_id]["items_dict"][full_item] += product_quantity
+        else:
+            orders[order_id]["items_dict"][full_item] = product_quantity
+
+    for order in orders.values():
+        order["itemss"] = [f"{item} x {qty}" for item, qty in order.pop("items_dict").items()]
 
         # Ürünleri siparişin içine ekliyoruz
         orders[order_id]["itemss"].append(full_item)
-
-    print(orders)
     # Template'e gönder
-    return render_template("home.html", orders=orders)
+    return orders
+
+def start_check_for_new_orders():
+    """Fonksiyonu background thread olarak başlatır"""
+    threading.Thread(target=check_for_new_orders, daemon=True).start()
+
+
+def check_for_new_orders():
+    """Yeni siparişleri periyodik olarak kontrol eder ve istemcilere iletir"""
+    global last_known_order_id
+
+    while True:
+        orders = fetch_orders()
+        if not orders:
+            time.sleep(5)
+            continue
+
+        current_max_order_id = max(orders.keys())  # En son sipariş ID'sini al
+        print("Son sipariş ID'si:", current_max_order_id, "Önceki sipariş ID'si:", last_known_order_id)
+
+        if last_known_order_id is None:
+            last_known_order_id = current_max_order_id
+
+        elif current_max_order_id > last_known_order_id:
+            print("Yeni sipariş geldi!")
+            last_known_order_id = current_max_order_id  # Güncelleme
+             # `datetime` objelerini string formatına çevir
+            for order_id, order in orders.items():
+
+                print("Yeni sipariş ID:", last_known_order_id)
+
+            socketio.emit("new_order", {"orders": orders})  # Yeni sipariş olduğunda istemciye gönder
+            socketio.emit("update_orders", {"orders": orders})  # Siparişleri güncelle
+        else:
+            print("Yeni sipariş yok!")  # Eğer yeni sipariş yoksa loglama yap
+
+        time.sleep(10)  # 10 saniyede bir kontrol et
+
+@app.route('/get-orders', methods=['GET'])
+def get_orders():
+    """İstemciden gelen istek üzerine siparişleri döndürür"""
+    orders = fetch_orders()
+    return jsonify(orders)
 
 @app.route('/update-order-status', methods=['POST'])
 def update_order_status():
@@ -395,5 +461,6 @@ def webhook_app():
     return api.webhook(request.method)
 
 if __name__ == '__main__':
-    app.run(debug=True,port=8000)
+    start_check_for_new_orders()
+    socketio.run(app, debug=True,port=8000)
     

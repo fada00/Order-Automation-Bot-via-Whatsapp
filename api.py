@@ -14,8 +14,8 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
 VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBO4CQH78eLyTQ6A6rw3qYW4SDgy3uX6IVtHOZChazEuZAvN9ZB829xX3cVP6mD3EVEdEVZChx2gD9TTvF17Hq30a56BRxZCoat0F6fXZCoJ6zMZBuE5zZCR2HPyYmwIM3miTEi2TuM33aCrZBshn9Pjyb53LuZASxR6Ab5fswVvxIUjBWQL0yMC6CIxZBmZCakOc0GMRM27xsAMaIbyUucgQma5RtMapMvQxu49AZD"
-PHONE_NUMBER_ID = "459475243924742"
+ACCESS_TOKEN = "EAAYjJkjWxhcBO8vgESICpEffdArG7QyAYwMGHCiy3KGdFz5AFfx4rZA5R2gwQLQiecK1nyZAqUThflQavgatRn7OnBlVAaFsiZCKtYMm9v23rPB2fRnVYpiekZARoE5mCZAbdj3HExdT9Yc5RIfgySHn8SaJcuUqjc634jZC0weGaCr2f75AfdFLZCG7EMgfBLIsnQ4YNdFGihCvN8m1lWlNKXdbKQPOyhjYt0kQXWMww8ZD"
+PHONE_NUMBER_ID = "537929752729469"
 
 # --------------------------------------------------------------------
 # PostgreSQL Bağlantı Bilgileri
