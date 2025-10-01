@@ -12,19 +12,19 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 # WhatsApp Cloud API Ayarları
 # --------------------------------------------------------------------
-WHATSAPP_API_URL = "https://graph.facebook.com/v21.0"
-VERIFY_TOKEN = "maydonozwp"
-ACCESS_TOKEN = "EAAYjJkjWxhcBOy8QkOqRMypFRD3ZA21BuEu0kvfZCECG0Td2YXitwzo7xA1uqo3egDIeAVi8oHlFnEb9urKIlDsy6JDMEDGCvgC310UE33pIJLfxW2Qs0vyPeGaGgkmw1FpzW196UA2LluDRBILm9OorFwxo1Uav7LOcUTHTBuZBjrUcGu8FumxHcw1gmAt9BOxCD0qstGv9p5rE4g21Uf8ZAD7vBZAu2CUi7M7t6FZCMZD"
-PHONE_NUMBER_ID = "537929752729469"
+WHATSAPP_API_URL = ""
+VERIFY_TOKEN = ""
+ACCESS_TOKEN = ""
+PHONE_NUMBER_ID = ""
 
 # --------------------------------------------------------------------
 # PostgreSQL Bağlantı Bilgileri
 # --------------------------------------------------------------------
-DB_HOST = "db-postgresql-fra1-87481-do-user-18505233-0.h.db.ondigitalocean.com"
-DB_NAME = "dbpool"
-DB_USER = "doadmin"
-DB_PASS = "AVNS_5cVVGMm4MB4bAZjijsd"
-DB_PORT = 25061
+DB_HOST = ""
+DB_NAME = ""
+DB_USER = ""
+DB_PASS = ""
+DB_PORT = 
 
 
 def get_db_connection():
