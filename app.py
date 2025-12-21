@@ -478,5 +478,6 @@ def webhook_app():
 if __name__ == '__main__':
     start_check_for_new_orders()
     # Host 0.0.0.0 olmalı, port 8080 olmalı, debug kapalı olmalı
-    socketio.run(app, host="0.0.0.0", port=8080, debug=False)
+    # allow_unsafe_werkzeug=True parametresini ekliyoruz
+socketio.run(app, host="0.0.0.0", port=8080, debug=False, allow_unsafe_werkzeug=True)
     
