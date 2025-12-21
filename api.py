@@ -1486,4 +1486,5 @@ def webhook(http_method):
 # Uygulamayı Çalıştır
 # --------------------------------------------------------------------
 if __name__ == '__main__':
-    app.run(port=80, debug=True)
+    # DigitalOcean'ın erişebilmesi için 0.0.0.0 ve port 8080 şart
+    app.run(host="0.0.0.0", port=8080, debug=False)
