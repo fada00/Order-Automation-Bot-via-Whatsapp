@@ -24,7 +24,7 @@ DB_HOST = ""
 DB_NAME = ""
 DB_USER = ""
 DB_PASS = ""
-DB_PORT = 
+DB_PORT = ""
 
 
 def get_db_connection():
