@@ -427,26 +427,41 @@ def get_coupons():
 
 # Kupon ekleme
 @app.route("/add_coupon", methods=["POST"])
+@app.route("/add_coupon", methods=["POST"])
 def add_coupon():
-    data = data.get("coupons")
-    code = data["code"]
+    # Önce request'ten veriyi almalısın
+    request_data = request.get_json()
+    coupons_data = request_data.get("coupons") # data ismini değiştirdik karışmasın diye
+    code = coupons_data["code"]
 
-    # Eksik veri kontrolü
-    if not data.get("code") or data.get("discount") is None or data.get("max_usage_limit") is None:
+    if not code or coupons_data.get("discount") is None:
         return jsonify({"message": "Eksik veri gönderildi!"}), 400
 
-    # Aynı kodda kupon olup olmadığını kontrol et
-    
-    if code["existing"]:
-        return jsonify({"message": "Bu kupon kodu zaten mevcut!"}), 400
+    # ... existing kontrolü ...
 
-    save_coupon = text("""
-        INSERT INTO coupons (code, discount, min_price, max_usage_limit, current_usage)
-        VALUES (:code, :discount, :min_price :max_usage_limit, :current_usage)
-    """)
-    Session.execute(save_coupon, {"code": data["code"], "discount": data["discount"],"min_price":["min_price"],
-                                  "max_usage_limit": data["max_usage_limit"], "current_usage": data["current_usage"]})
-
+    session = Session() # Oturumu başlat
+    try:
+        save_coupon = text("""
+            INSERT INTO coupons (code, discount, min_price, max_usage_limit, current_usage)
+            VALUES (:code, :discount, :min_price, :max_usage_limit, :current_usage)
+        """)
+        # Session.execute değil, session.execute kullan
+        session.execute(save_coupon, {
+            "code": coupons_data["code"], 
+            "discount": coupons_data["discount"],
+            "min_price": coupons_data.get("min_price", 0), # Eksik parametreler için varsayılan değer
+            "max_usage_limit": coupons_data["max_usage_limit"], 
+            "current_usage": coupons_data["current_usage"]
+        })
+        session.commit()
+        return jsonify({"message": "Kupon eklendi."})
+    except Exception as e:
+        session.rollback()
+        print("Hata:", e)
+        return jsonify({"message": "Hata oluştu"}), 500
+    finally:
+        session.close()
+        
 # Kupon silme
 @app.route("/delete_coupon/<string:code>", methods=["DELETE"])
 def delete_coupon(code):
@@ -459,8 +474,9 @@ def delete_coupon(code):
 @app.route('/webhook', methods=['GET','POST'])
 def webhook_app():
     return api.webhook(request.method)
-
+    
 if __name__ == '__main__':
     start_check_for_new_orders()
-    socketio.run(app, debug=True,port=8000)
+    # Host 0.0.0.0 olmalı, port 8080 olmalı, debug kapalı olmalı
+    socketio.run(app, host="0.0.0.0", port=8080, debug=False)
     
