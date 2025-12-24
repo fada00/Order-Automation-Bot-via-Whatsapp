@@ -14,7 +14,7 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 WHATSAPP_API_URL = "https://sea-lion-app-qe4nj.ondigitalocean.app/webhook"
 VERIFY_TOKEN = "stat311"
-ACCESS_TOKEN = "EAAYjJkjWxhcBQRSUxOhkqaH0DdnSZBoDaRFAp1zBJgXPpgjNDOtZCjXhmUvnZA5riankjyz5VdQJxEWwrKmAbKQTSHntAUYxDX8UlZBbI75uMnGenc7qUJ4ruZBi3WIJHKf1FlbF1ZCN62EudKRbtXKZA7JYDvv8nBZCuusPZAzIZCOtY46syrAqrEs1PgF3TEjpldZB4GOpWxkw2h29B0PsxMyDHUZAzOB57mxSYDI7ZB3BLoR4X1C1XEPfAPSXxW6edCc8lNZAzSmcGogWBNLZCmd4yx4ZBlYPKdkCkt1tlPR8KgZDZD"
+ACCESS_TOKEN = "EAAYjJkjWxhcBQRymGqFMLIZAsVWbOoZAvoWELCzCZBwSyZAv1DITjaauwUInoOXhfmkbgessrJWWWY6inRXmnMvBHzUmVUAR7O6CDLXueX89uslTqTdH57pYMjuVUyoFqkRZBb8pV0JzLuin7imeLGZAlZCvzet9rYxGK8A5ZASkob8Orwr8X4RqYOtsOGESZC68B0ZCYvL0BshEXWG3ZCkPOKP8KzZCC1RZB9G6CFZBZCcv6ly0rEXaKNoZBbyIg4btnCtaMzNbaPpQByYJ9UP1W70cqyKtPHnBz5jhLkS5aGJNFgZDZD"
 PHONE_NUMBER_ID = "982874401556438"
 
 # --------------------------------------------------------------------
