@@ -12,19 +12,19 @@ app = Flask(__name__)
 # --------------------------------------------------------------------
 # WhatsApp Cloud API Ayarları
 # --------------------------------------------------------------------
-WHATSAPP_API_URL = "https://sea-lion-app-qe4nj.ondigitalocean.app/webhook"
-VERIFY_TOKEN = "stat311"
-ACCESS_TOKEN = "EAAYjJkjWxhcBQRymGqFMLIZAsVWbOoZAvoWELCzCZBwSyZAv1DITjaauwUInoOXhfmkbgessrJWWWY6inRXmnMvBHzUmVUAR7O6CDLXueX89uslTqTdH57pYMjuVUyoFqkRZBb8pV0JzLuin7imeLGZAlZCvzet9rYxGK8A5ZASkob8Orwr8X4RqYOtsOGESZC68B0ZCYvL0BshEXWG3ZCkPOKP8KzZCC1RZB9G6CFZBZCcv6ly0rEXaKNoZBbyIg4btnCtaMzNbaPpQByYJ9UP1W70cqyKtPHnBz5jhLkS5aGJNFgZDZD"
-PHONE_NUMBER_ID = "982874401556438"
+WHATSAPP_API_URL = ""
+VERIFY_TOKEN = ""
+ACCESS_TOKEN = ""
+PHONE_NUMBER_ID = ""
 
 # --------------------------------------------------------------------
 # PostgreSQL Bağlantı Bilgileri
 # --------------------------------------------------------------------
-DB_HOST = "db-postgresql-fra1-78106-do-user-18505233-0.i.db.ondigitalocean.com"
-DB_NAME = "defaultdb"
-DB_USER = "doadmin"
-DB_PASS = "AVNS_Z0QICT2kB9XMCABIcm2"
-DB_PORT = "25060"
+DB_HOST = ""
+DB_NAME = ""
+DB_USER = ""
+DB_PASS = ""
+DB_PORT = ""
 
 
 def get_db_connection():
