@@ -10,7 +10,7 @@ from flask_socketio import SocketIO
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 import api
 # Veri tabanı bağlantısı
-engine = create_engine("postgresql://doadmin:AVNS_Z0QICT2kB9XMCABIcm2@db-postgresql-fra1-78106-do-user-18505233-0.i.db.ondigitalocean.com:25060/defaultdb?sslmode=require")  # PostgreSQL bilgilerinizi ekleyin
+engine = create_engine("")  # PostgreSQL bilgilerinizi ekleyin
 metadata = MetaData()
 
 # Flask uygulaması
