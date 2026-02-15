@@ -59,13 +59,13 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 *Interactive ordering experience via WhatsApp Business API. The flow guides the user step-by-step.*
 
 <p align="center">
-  <img src="Screenshots/wp_flow_1.jpeg" width="75%" alt="Sign up and Order">
+  <img src="Screenshots/wp_flow_1.jpeg" width="60%" alt="Sign up and Order">
 </p>
 <p align="center">
-  <img src="Screenshots/wp_flow_2.jpeg" width="50%" alt="Order Options and Cart View">
+  <img src="Screenshots/wp_flow_2.jpeg" width="60%" alt="Order Options and Cart View">
 </p>
 <p align="center">
-  <img src="Screenshots/wp_flow_3.jpeg" width="50%" alt="Order Confirmation and Address">
+  <img src="Screenshots/wp_flow_3.jpeg" width="60%" alt="Order Confirmation and Address">
 </p>
 
 ### 👨‍🍳 2. Kitchen Display System (Live Dashboard)
