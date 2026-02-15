@@ -58,9 +58,9 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 ### 📱 1. Customer Experience (WhatsApp Flow)
 *Interactive ordering experience via WhatsApp Business API (List Messages & Buttons).*
 <p align="center">
-  <img src="Screenshots/wp_flow_1.jpeg" width="30%" alt="Menu Selection">
-  <img src="Screenshots/wp_flow_2.jpeg" width="30%" alt="Cart View">
-  <img src="Screenshots/wp_flow_3.jpeg" width="30%" alt="Order Confirmation">
+  <img src="Screenshots/wp_flow_1.jpeg" width="32%" alt="Menu Selection">
+  <img src="Screenshots/wp_flow_2.jpeg" width="32%" alt="Cart View">
+  <img src="Screenshots/wp_flow_3.jpeg" width="32%" alt="Order Confirmation">
 </p>
 
 ### 👨‍🍳 2. Kitchen Display System (Live Dashboard)
@@ -72,12 +72,13 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 ### ⚙️ 3. Admin & Menu Management
 *Dynamic control over prices, products, and coupons via Web Panel.*
 <p align="center">
-  <img src="Screenshots/admin_1.jpeg" width="48%" alt="Menu Edit">
-  <img src="Screenshots/admin_2.jpeg" width="48%" alt="Coupon Settings">
-  <img src="Screenshots/admin_3.jpeg" width="48%" alt="Coupon Settings">
-   <img src="Screenshots/admin_4.jpeg" width="48%" alt="Coupon Settings">
+  <img src="Screenshots/admin_1.jpeg" width="45%" alt="Menu Edit">
+  <img src="Screenshots/admin_2.jpeg" width="45%" alt="Coupon Settings">
 </p>
-
+<p align="center">
+  <img src="Screenshots/admin_3.jpeg" width="45%" alt="Product Management">
+  <img src="Screenshots/admin_4.jpeg" width="45%" alt="System Settings">
+</p>
 ## 🛠️ Tech Stack
 
 | Component | Technology | Usage |
