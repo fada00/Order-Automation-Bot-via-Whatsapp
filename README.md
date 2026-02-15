@@ -59,13 +59,13 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 *Interactive ordering experience via WhatsApp Business API. The flow guides the user step-by-step.*
 
 <p align="center">
-  <img src="Screenshots/wp_flow_1.jpeg" width="50%" alt="Menu Selection">
+  <img src="Screenshots/wp_flow_1.jpeg" width="50%" alt="Sign up and Order">
 </p>
 <p align="center">
-  <img src="Screenshots/wp_flow_2.jpeg" width="50%" alt="Cart View">
+  <img src="Screenshots/wp_flow_2.jpeg" width="50%" alt="Order Options and Cart View">
 </p>
 <p align="center">
-  <img src="Screenshots/wp_flow_3.jpeg" width="50%" alt="Order Confirmation">
+  <img src="Screenshots/wp_flow_3.jpeg" width="50%" alt="Order Confirmation and Address">
 </p>
 
 ### 👨‍🍳 2. Kitchen Display System (Live Dashboard)
@@ -79,16 +79,16 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 *Dynamic control over prices, products, and coupons via Web Panel.*
 
 <p align="center">
-  <img src="Screenshots/admin_1.jpeg" width="90%" alt="Menu Edit">
+  <img src="Screenshots/admin_1.jpeg" width="90%" alt="Add Product">
 </p>
 <p align="center">
-  <img src="Screenshots/admin_2.jpeg" width="90%" alt="Coupon Settings">
+  <img src="Screenshots/admin_2.jpeg" width="90%" alt="Create Menu">
 </p>
 <p align="center">
-  <img src="Screenshots/admin_3.jpeg" width="90%" alt="Product Management">
+  <img src="Screenshots/admin_3.jpeg" width="90%" alt="Update Prices">
 </p>
 <p align="center">
-  <img src="Screenshots/admin_4.jpeg" width="90%" alt="System Settings">
+  <img src="Screenshots/admin_4.jpeg" width="90%" alt="Coupon Settings">
 </p>
 
 ## 🛠️ Tech Stack
