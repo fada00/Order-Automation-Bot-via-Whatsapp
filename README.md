@@ -66,16 +66,16 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 ### 👨‍🍳 2. Kitchen Display System (Live Dashboard)
 *Incoming orders appear instantly with sound notification. Staff can update status real-time.*
 <p align="center">
-  <img src="Screenshots/dashboard.jpeg" width="95%" alt="Kitchen Dashboard">
+  <img src="Screenshots/Dashboard.jpeg" width="95%" alt="Kitchen Dashboard">
 </p>
 
 ### ⚙️ 3. Admin & Menu Management
 *Dynamic control over prices, products, and coupons via Web Panel.*
 <p align="center">
-  <img src="Screenshots/admin_1.png" width="48%" alt="Menu Edit">
-  <img src="Screenshots/admin_2.png" width="48%" alt="Coupon Settings">
-  <img src="Screenshots/admin_3.png" width="48%" alt="Coupon Settings">
-   <img src="Screenshots/admin_4.png" width="48%" alt="Coupon Settings">
+  <img src="Screenshots/admin_1.jpeg" width="48%" alt="Menu Edit">
+  <img src="Screenshots/admin_2.jpeg" width="48%" alt="Coupon Settings">
+  <img src="Screenshots/admin_3.jpeg" width="48%" alt="Coupon Settings">
+   <img src="Screenshots/admin_4.jpeg" width="48%" alt="Coupon Settings">
 </p>
 
 ## 🛠️ Tech Stack
