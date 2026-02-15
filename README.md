@@ -59,23 +59,23 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 *Interactive ordering experience via WhatsApp Business API (List Messages & Buttons).*
 <p align="center">
   <img src="Screenshots/wp_flow_1.jpeg" width="30%" alt="Menu Selection">
-  <img src="screenshots/wp_flow_2.jpeg" width="30%" alt="Cart View">
-  <img src="screenshots/wp_flow_3.jpeg" width="30%" alt="Order Confirmation">
+  <img src="Screenshots/wp_flow_2.jpeg" width="30%" alt="Cart View">
+  <img src="Screenshots/wp_flow_3.jpeg" width="30%" alt="Order Confirmation">
 </p>
 
 ### 👨‍🍳 2. Kitchen Display System (Live Dashboard)
 *Incoming orders appear instantly with sound notification. Staff can update status real-time.*
 <p align="center">
-  <img src="screenshots/dashboard.jpeg" width="95%" alt="Kitchen Dashboard">
+  <img src="Screenshots/dashboard.jpeg" width="95%" alt="Kitchen Dashboard">
 </p>
 
 ### ⚙️ 3. Admin & Menu Management
 *Dynamic control over prices, products, and coupons via Web Panel.*
 <p align="center">
-  <img src="screenshots/admin_1.png" width="48%" alt="Menu Edit">
-  <img src="screenshots/admin_2.png" width="48%" alt="Coupon Settings">
-  <img src="screenshots/admin_3.png" width="48%" alt="Coupon Settings">
-   <img src="screenshots/admin_4.png" width="48%" alt="Coupon Settings">
+  <img src="Screenshots/admin_1.png" width="48%" alt="Menu Edit">
+  <img src="Screenshots/admin_2.png" width="48%" alt="Coupon Settings">
+  <img src="Screenshots/admin_3.png" width="48%" alt="Coupon Settings">
+   <img src="Screenshots/admin_4.png" width="48%" alt="Coupon Settings">
 </p>
 
 ## 🛠️ Tech Stack
