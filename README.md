@@ -1,68 +1,93 @@
-# 🍔 WhatsApp Order Automation & Kitchen Display System (KDS)
+# 🥙 WhatsApp Order Automation & Real-Time KDS
 
-![Python](https://img.shields.io/badge/Backend-Python%20%7C%20Flask-blue) ![WhatsApp API](https://img.shields.io/badge/Integration-WhatsApp%20Business%20Cloud-green) ![Real-Time](https://img.shields.io/badge/Feature-Socket.IO%20RealTime-red) ![Database](https://img.shields.io/badge/Database-PostgreSQL-blue)
+![System Status](https://img.shields.io/badge/System-Production%20Ready-success) ![Backend](https://img.shields.io/badge/Backend-Python%20%7C%20Flask-blue) ![Database](https://img.shields.io/badge/Database-PostgreSQL%20(3NF)-blue) ![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
 
-> **Project Context:** A full-stack automated ordering solution developed for a restaurant (ODTÜ Maydanoz Döner). It bridges the gap between customer orders on WhatsApp and kitchen operations via a real-time web dashboard.
+> **Role:** Lead Software Architect & Full-Stack Developer.
 
-## 🎯 Project Overview
-This system eliminates manual order taking by transforming WhatsApp into a fully automated ordering channel. It handles the entire flow from product selection to kitchen notification without human intervention.
+## 🚀 Project Summary
+This project is a fully automated **Order Management System (OMS)** that eliminates manual order taking for high volume restaurants. It integrates the **Meta WhatsApp Cloud API** with a real time web dashboard (KDS), allowing customers to order food via chat while the kitchen staff receives instant audio visual alerts.
 
-**Key capabilities:**
-* **Customers:** Order food, apply coupons, and customize items directly inside WhatsApp.
-* **Kitchen/Staff:** Receive orders instantly on a live dashboard with audio alerts (no page refresh required).
-* **Management:** Update menus, prices, and discount coupons dynamically via an admin panel.
+The system replaces manual phone taking/messaging with a structured, database driven workflow, reducing order errors significantly and increasing operational efficiency.
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture & Workflow
 
-The project consists of two main micro-services interacting with a PostgreSQL database:
+The application operates on a micro service logic backed by a robust PostgreSQL database:
 
-1.  **WhatsApp Webhook (`api.py`):**
-    * Handles incoming messages from WhatsApp Cloud API.
-    * Manages **User Session State** (Greeting -> Menu Selection -> Cart -> Confirmation).
-    * Processes business logic like **Coupon Validation** and Cart Calculation.
-    * Uses `psycopg2` for high-performance raw SQL queries.
+1.  **Client Interface (WhatsApp Webhook):**
+    * Customers interact with a Python based bot (`api.py`) acting as a state machine.
+    * It handles complex flows: **Menu Selection -> Product Customization -> Cart Management -> Coupon Validation -> Order Confirmation**.
+    * Utilizes WhatsApp's *Interactive Messages* (Reply Buttons & List Messages) for a native app experience.
 
-2.  **Admin Dashboard & KDS (`app.py`):**
-    * **Real-Time Communication:** Uses **Flask-SocketIO** to push new orders to the frontend instantly.
-    * **ORM Layer:** Uses **SQLAlchemy** for complex admin operations (Menu CRUD, Coupon Management).
-    * **Frontend:** HTML/CSS/JS interfaces for the Kitchen Display System (`home.html`) and Menu Manager (`menu.html`).
+2.  **Kitchen Display System (KDS):**
+    * A responsive web dashboard (`app.py`) running on kitchen tablets.
+    * **Real-Time Sync:** Uses **Flask-SocketIO** (WebSockets) to push new orders instantly. When an order arrives, the screen updates immediately and plays a notification sound ("Ding").
+    * **Order Lifecycle:** Staff can update status (Preparing -> Delivered) which updates the database in real time.
 
-## 🚀 Key Features
+3.  **Database Layer (PostgreSQL):**
+    * Designed with strict **3NF (Third Normal Form)** normalization standards.
+    * Acting as the single source of truth for products, orders, and user data.
 
-### 📱 Customer Side (WhatsApp Bot)
-* **Interactive Flow:** Uses WhatsApp "Interactive Messages" (Buttons & List Messages) for a smooth UX.
-* **State Management:** Tracks where the user is in the ordering process (Redis-like logic implemented via DB).
-* **Dynamic Cart:** Users can add multiple items, view the cart, and confirm orders.
-* **Discount System:** Real-time validation of coupon codes.
+## 🧩 Database Architecture (ER Diagram)
+The database was architected to handle high volume transactional data while maintaining referential integrity. The schema follows strict normalization rules to prevent data redundancy and anomalies.
 
-### 💻 Business Side (Web Dashboard)
-* **Live Order Feed:** Incoming orders appear instantly with a "Ding" sound effect.
-* **Status Tracking:** Staff can mark orders as "Preparing" or "Delivered".
-* **Menu Engineering:**
-    * Add/Remove Products.
-    * Update Prices instantly.
-    * Create usage-limited Coupons (e.g., "First 50 users get 10% off").
+<p align="center">
+  <img src="screenshots/schema.jpeg" width="85%" alt="ER Diagram">
+</p>
 
-## 🛠️ Technologies & Tools
+### Schema Highlights
+* **`orders` & `order_details`:** Separated structure to handle multi-item baskets and historical data tracking efficiently.
+* **`product_options`:** A bridge table allowing N:M relationships for customizations (e.g., "No Onion", "Extra Sauce").
+* **`coupons`:** Features concurrency checks (`current_usage` vs `max_limit`) to prevent coupon abuse dynamically.
 
-* **Backend:** Python, Flask, Flask-SocketIO, SQLAlchemy.
-* **Database:** PostgreSQL (Hosted on DigitalOcean).
-* **API:** Meta (Facebook) WhatsApp Cloud API.
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript (Socket.client).
-* **Deployment:** (Mention where you deployed it, e.g., Heroku, DigitalOcean, or Localhost).
+## 💻 Technical Highlights
 
-## 📸 Screenshots
+### 1. State Machine Logic (Session Management)
+Since WhatsApp API is stateless, I implemented a custom session handler in Python using the database. The system tracks the user's `phone_number` to determine their current context (e.g., `SELECTING_MENU`, `ENTERING_COUPON`), ensuring a smooth conversational flow.
 
-| Kitchen Dashboard (Live) | WhatsApp Order Flow | Menu Management |
-|:---:|:---:|:---:|
-| ![Dashboard](screenshots/dashboard.png) | ![WhatsApp](screenshots/whatsapp_flow.png) | ![Menu](screenshots/admin.png) |
-*(Placeholders for actual screenshots)*
+### 2. Real Time Bidirectional Communication
+Instead of using standard HTTP polling (which delays orders and strains the server), I utilized **WebSockets (Socket.IO)**.
+* **Result:** 0-latency communication between the WhatsApp backend and the Kitchen Frontend.
 
-## 🧩 Database Schema (Simplified)
-* `orders`: Stores order details, status, and timestamps.
-* `customers`: Manages user phone numbers and profiles.
-* `products`: Menu items with categories and prices.
-* `coupons`: Discount codes with usage limits and logic.
+### 3. Dynamic Menu & Coupon Engine
+The admin panel (`menu.html`) allows for instant business logic changes without code deployment:
+* **Dynamic Pricing:** Price updates reflect immediately on the bot.
+* **Smart Logic:** Implemented algorithms for complex business rules (e.g., "Code `ILK50` valid only for the first 50 unique users").
+
+## 📸 Interface Gallery
+
+### 📱 1. Customer Experience (WhatsApp Flow)
+*Interactive ordering experience via WhatsApp Business API (List Messages & Buttons).*
+<p align="center">
+  <img src="screenshots/wp_flow_1.jpeg" width="30%" alt="Menu Selection">
+  <img src="screenshots/wp_flow_2.jpeg" width="30%" alt="Cart View">
+  <img src="screenshots/wp_flow_3.jpeg" width="30%" alt="Order Confirmation">
+</p>
+
+### 👨‍🍳 2. Kitchen Display System (Live Dashboard)
+*Incoming orders appear instantly with sound notification. Staff can update status real-time.*
+<p align="center">
+  <img src="screenshots/dashboard.jpeg" width="95%" alt="Kitchen Dashboard">
+</p>
+
+### ⚙️ 3. Admin & Menu Management
+*Dynamic control over prices, products, and coupons via Web Panel.*
+<p align="center">
+  <img src="screenshots/admin_1.png" width="48%" alt="Menu Edit">
+  <img src="screenshots/admin_2.png" width="48%" alt="Coupon Settings">
+  <img src="screenshots/admin_3.png" width="48%" alt="Coupon Settings">
+   <img src="screenshots/admin_4.png" width="48%" alt="Coupon Settings">
+</p>
+
+## 🛠️ Tech Stack
+
+| Component | Technology | Usage |
+| :--- | :--- | :--- |
+| **Backend Framework** | Python / Flask | Core API logic & Webhook handling |
+| **Real-Time Engine** | Flask-SocketIO | Instant frontend updates (WebSockets) |
+| **Database** | PostgreSQL | Relational data storage (Hosted on DigitalOcean) |
+| **ORM & SQL** | SQLAlchemy & Psycopg2 | Hybrid approach for ORM convenience & Raw SQL speed |
+| **API Integration** | WhatsApp Cloud API | Business messaging interface |
+| **Frontend** | HTML5 / JS / CSS | Admin & Kitchen Dashboards |
 
 ---
-*Developed by Fatih Dallı*
+*Architected and Developed by Fatih Dallı and Ahmet Metin*
