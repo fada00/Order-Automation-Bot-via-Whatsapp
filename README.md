@@ -58,7 +58,7 @@ The admin panel (`menu.html`) allows for instant business logic changes without 
 ### 📱 1. Customer Experience (WhatsApp Flow)
 *Interactive ordering experience via WhatsApp Business API (List Messages & Buttons).*
 <p align="center">
-  <img src="screenshots/wp_flow_1.jpeg" width="30%" alt="Menu Selection">
+  <img src="Screenshots/wp_flow_1.jpeg" width="30%" alt="Menu Selection">
   <img src="screenshots/wp_flow_2.jpeg" width="30%" alt="Cart View">
   <img src="screenshots/wp_flow_3.jpeg" width="30%" alt="Order Confirmation">
 </p>
