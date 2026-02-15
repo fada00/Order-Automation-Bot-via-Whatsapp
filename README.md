@@ -1,6 +1,6 @@
 # 🥙 WhatsApp Order Automation & Real-Time KDS
 
-![System Status](https://img.shields.io/badge/System-Production%20Ready-success) ![Backend](https://img.shields.io/badge/Backend-Python%20%7C%20Flask-blue) ![Database](https://img.shields.io/badge/Database-PostgreSQL%20(3NF)-blue) ![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
+![System Status](https://img.shields.io/badge/System-Production%20Ready-success) ![Backend](https://img.shields.io/badge/Backend-Python%20%7C%20Flask-blue) ![Database](https://img.shields.io/badge/Database-PostgreSQL%20-blue) ![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
 
 > **Role:** Lead Software Architect & Full-Stack Developer.
 
