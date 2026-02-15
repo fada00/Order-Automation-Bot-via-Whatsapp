@@ -31,7 +31,7 @@ The application operates on a micro service logic backed by a robust PostgreSQL 
 The database was architected to handle high volume transactional data while maintaining referential integrity. The schema follows strict normalization rules to prevent data redundancy and anomalies.
 
 <p align="center">
-  <img src="Screenshots/Schema.png" width="85%" alt="ER Diagram">
+  <img src="Screenshots/Schema.jpeg" width="85%" alt="ER Diagram">
 </p>
 
 ### Schema Highlights
